@@ -25,7 +25,48 @@ npx skillforge list
 
 **Pros:** Zero setup, works anywhere with Node.js, auto-detects platform directory.
 
-## Method 2: Install Script
+## Method 2: claude.ai (Manual Upload)
+
+claude.ai does not support filesystem-based installation. Upload skills as ZIP files instead.
+Requires a Pro, Max, Team, or Enterprise plan with code execution enabled.
+
+**Step 1 — Package the skill folder as a ZIP:**
+
+```bash
+cd skills/thinking-tools
+zip -r analogy-engine.zip analogy-engine/
+```
+
+The ZIP must contain the skill folder as its root. The folder name must match the `name` field in `SKILL.md`.
+
+```
+# Correct
+analogy-engine.zip
+└── analogy-engine/
+    ├── SKILL.md
+    └── references/
+
+# Wrong — files directly in ZIP root
+analogy-engine.zip
+├── SKILL.md
+└── references/
+```
+
+**Step 2 — Upload:**
+
+1. Open https://claude.ai
+2. Click **Customize** (left sidebar)
+3. Click **Skills** at the top
+4. Click the **+** button → **Upload a skill**
+5. Select your `.zip` file
+6. Toggle the skill on to activate it
+
+You can also run `npx skillforge --platform claude-ai` or `./install.sh --platform claude-ai` for a quick reminder of these steps.
+
+**Pros:** Works on any OS, no CLI tools needed beyond `zip`.
+**Cons:** Manual; each skill must be packaged and uploaded individually.
+
+## Method 3: Install Script
 
 Clone the repo, then install specific skills:
 
@@ -61,7 +102,7 @@ Default install location depends on platform:
 
 **Pros:** Simple, no git knowledge needed, customizable target directory.
 
-## Method 3: Sparse Checkout (Developers)
+## Method 4: Sparse Checkout (Developers)
 
 Clone only the skills you need — nothing else gets downloaded:
 
@@ -85,7 +126,7 @@ git sparse-checkout list
 
 **Pros:** Efficient, version-controlled, easy to pull updates.
 
-## Method 4: Remote One-Liner (No clone needed)
+## Method 5: Remote One-Liner (No clone needed)
 
 Install a skill directly without cloning the repo:
 
@@ -98,7 +139,7 @@ curl -sL https://github.com/gouthi/skillforge/archive/main.tar.gz \
 
 **Pros:** Zero setup, works anywhere with curl.
 
-## Method 5: Direct Download via Raw URLs
+## Method 6: Direct Download via Raw URLs
 
 Grab individual files:
 
@@ -111,7 +152,7 @@ curl -sL -o SKILL.md \
 **Pros:** Zero dependencies.
 **Cons:** Manual; you manage individual files yourself.
 
-## Method 6: GitHub Releases
+## Method 7: GitHub Releases
 
 When available, individual skill archives are published on the [Releases](https://github.com/gouthi/skillforge/releases) page:
 
@@ -125,7 +166,7 @@ Download only what you need from the Releases tab.
 
 **Pros:** Versioned, clean, no git required.
 
-## Method 7: Git Submodule (Embedding in your own repo)
+## Method 8: Git Submodule (Embedding in your own repo)
 
 ```bash
 git submodule add https://github.com/gouthi/skillforge.git vendor/skillforge
@@ -139,5 +180,5 @@ Then symlink or copy specific skills into your skill directory.
 |----------|-----------------|----------------|
 | Claude Code | `~/.claude/skills/` or project-level `.claude/skills/` | `npx skillforge install` or `./install.sh` |
 | Cursor | `~/.cursor/skills/` or project-level `.cursor/skills/` | `npx skillforge install --platform cursor` or `./install.sh --platform cursor` |
-| claude.ai | Upload via Settings → Features → Skills | `npx skillforge --platform claude-ai` for instructions |
+| claude.ai | Upload ZIP via Customize → Skills | See Method 2 above, or `npx skillforge --platform claude-ai` for a reminder |
 | Other frameworks | Varies — consult your framework's docs | Use `SKILLS_INSTALL_DIR` env var or `--dir` flag |
