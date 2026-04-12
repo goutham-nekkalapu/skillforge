@@ -1,0 +1,27 @@
+{
+  "name": "skillforge",
+  "version": "1.0.0",
+  "description": "Install AI skills for Claude Code, Cursor, and other agentic frameworks",
+  "license": "MIT",
+  "bin": {
+    "skillforge": "./bin/cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gouthi/skillforge.git"
+  },
+  "keywords": [
+    "ai",
+    "skills",
+    "claude",
+    "cursor",
+    "agentic",
+    "obsidian"
+  ],
+  "author": "Goutham Nekkalapu",
+  "files": [
+    "bin/",
+    "LICENSE",
+    "README.md"
+  ]
+}
