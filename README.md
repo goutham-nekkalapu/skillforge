@@ -75,6 +75,18 @@ curl -sL -o SKILL.md \
   https://raw.githubusercontent.com/gouthi/skillforge/main/skills/thinking-tools/analogy-engine/SKILL.md
 ```
 
+**Option E — claude.ai (manual upload)**
+
+claude.ai requires uploading skills as ZIP files. Requires Pro, Max, Team, or Enterprise with code execution enabled.
+
+```bash
+# Package a skill as a ZIP (folder must be the root of the archive)
+cd skills/thinking-tools
+zip -r analogy-engine.zip analogy-engine/
+```
+
+Then upload: **Customize** (left sidebar) → **Skills** → **+** → **Upload a skill** → select the `.zip` → toggle on.
+
 See [docs/installation.md](docs/installation.md) for all installation methods including remote one-liners and GitHub Releases.
 
 ## Repo Structure

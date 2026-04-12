@@ -169,15 +169,27 @@ function showClaudeAiInstructions() {
   console.log(`
 ${BOLD}claude.ai — Manual Upload Instructions${NC}
 
-  claude.ai does not support filesystem-based skill installation.
-  To add skills to claude.ai:
+  claude.ai requires uploading skills as ZIP files.
+  Requires a Pro, Max, Team, or Enterprise plan with code execution enabled.
 
-  1. Open https://claude.ai
-  2. Go to Settings → Features → Skills
-  3. Click "Add Skill" and upload the SKILL.md file
+  ${BOLD}Step 1: Package the skill as a ZIP${NC}
 
-  Or, if you use the Google Drive MCP connector, place the SKILL.md
-  files in your connected Google Drive folder.
+    cd skills/<group>
+    zip -r <skill-name>.zip <skill-name>/
+
+    The ZIP must contain the skill folder as its root:
+
+      ${GREEN}Correct:${NC}  analogy-engine.zip → analogy-engine/SKILL.md
+      ${RED}Wrong:${NC}    analogy-engine.zip → SKILL.md (files directly in root)
+
+  ${BOLD}Step 2: Upload to claude.ai${NC}
+
+    1. Open https://claude.ai
+    2. Click ${CYAN}Customize${NC} (left sidebar)
+    3. Click ${CYAN}Skills${NC} at the top
+    4. Click the ${CYAN}+${NC} button → ${CYAN}Upload a skill${NC}
+    5. Select your .zip file
+    6. Toggle the skill on to activate it
 `);
 }
 
