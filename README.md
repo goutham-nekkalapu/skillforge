@@ -6,6 +6,12 @@ Each skill is a self-contained folder with a `SKILL.md` definition and optional 
 
 ## Skills Catalog
 
+### Learning
+
+| Skill | Platform | Description |
+|-------|----------|-------------|
+| [lecture-distiller](skills/learning/lecture-distiller/) | All | Distills video transcripts and screenshots into structured, scannable study notes |
+
 ### Obsidian
 
 | Skill | Platform | Description |
@@ -76,6 +82,8 @@ See [docs/installation.md](docs/installation.md) for all installation methods in
 ```
 skillforge/
 ├── skills/
+│   ├── learning/                    # Group: Study and learning skills
+│   │   └── lecture-distiller/
 │   ├── obsidian/                    # Group: Obsidian vault integrations
 │   │   ├── obsidian-save-cloud/
 │   │   └── obsidian-save-local/
