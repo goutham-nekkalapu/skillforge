@@ -11,13 +11,13 @@ No clone needed — installs directly from GitHub:
 npx skillforge install obsidian/obsidian-save-cloud
 
 # Install all skills in a group
-npx skillforge install thinking-patterns
+npx skillforge install thinking-tools
 
 # Install everything
 npx skillforge install --all
 
 # Install to Cursor instead of Claude Code
-npx skillforge install --platform cursor thinking-patterns
+npx skillforge install --platform cursor thinking-tools
 
 # List available skills
 npx skillforge list
@@ -37,7 +37,7 @@ cd skillforge
 ./install.sh obsidian/obsidian-save-cloud
 
 # Install all skills in a group
-./install.sh thinking-patterns
+./install.sh thinking-tools
 
 # List available skills
 ./install.sh --list
@@ -46,13 +46,13 @@ cd skillforge
 ./install.sh --all
 
 # Install to Cursor's skill directory
-./install.sh --platform cursor thinking-patterns
+./install.sh --platform cursor thinking-tools
 
 # Show claude.ai upload instructions
 ./install.sh --platform claude-ai
 
 # Custom target directory
-SKILLS_INSTALL_DIR=~/my-skills ./install.sh thinking-patterns
+SKILLS_INSTALL_DIR=~/my-skills ./install.sh thinking-tools
 ```
 
 Default install location depends on platform:
@@ -68,7 +68,7 @@ Clone only the skills you need — nothing else gets downloaded:
 ```bash
 git clone --filter=blob:none --sparse https://github.com/gouthi/skillforge.git
 cd skillforge
-git sparse-checkout add skills/obsidian/obsidian-save-cloud skills/thinking-patterns/thinking-patterns
+git sparse-checkout add skills/obsidian/obsidian-save-cloud skills/thinking-tools/reasoning-playbook
 ```
 
 Add more skills later:
@@ -105,7 +105,7 @@ Grab individual files:
 ```bash
 # Just the SKILL.md
 curl -sL -o SKILL.md \
-  https://raw.githubusercontent.com/gouthi/skillforge/main/skills/thinking-patterns/thinking-patterns/SKILL.md
+  https://raw.githubusercontent.com/gouthi/skillforge/main/skills/thinking-tools/reasoning-playbook/SKILL.md
 ```
 
 **Pros:** Zero dependencies.
@@ -118,7 +118,7 @@ When available, individual skill archives are published on the [Releases](https:
 ```
 skillforge-v1.0.0.tar.gz                    # full bundle
 skill-obsidian-save-cloud-v1.0.0.tar.gz     # individual
-skill-thinking-patterns-v1.0.0.tar.gz       # individual
+skill-reasoning-playbook-v1.0.0.tar.gz      # individual
 ```
 
 Download only what you need from the Releases tab.

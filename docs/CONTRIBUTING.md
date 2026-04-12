@@ -11,7 +11,8 @@ Skills are organized into groups under `skills/`. Check the existing groups firs
 ```
 skills/
 ├── obsidian/              # Obsidian vault integration skills
-└── thinking-patterns/     # Structured reasoning frameworks
+├── prompts/               # Prompt engineering and extraction skills
+└── thinking-tools/        # Reasoning, analysis, and communication skills
 ```
 
 If your skill fits an existing group, add it there. If it doesn't fit, propose a new group in your PR description.

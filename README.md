@@ -6,10 +6,30 @@ Each skill is a self-contained folder with a `SKILL.md` definition and optional 
 
 ## Skills Catalog
 
+### Obsidian
+
 | Skill | Platform | Description |
 |-------|----------|-------------|
 | [obsidian-save-cloud](skills/obsidian/obsidian-save-cloud/) | claude.ai | Save conversation content to an Obsidian vault on Google Drive |
-| [thinking-patterns](skills/thinking-patterns/thinking-patterns/) | Claude Code / claude.ai / Cursor | Structured thinking and reasoning patterns for deeper analysis |
+
+### Prompts
+
+| Skill | Platform | Description |
+|-------|----------|-------------|
+| [prompt-archeologist](skills/prompts/prompt-archeologist/) | All | Reverse-engineers reusable prompts from conversations and rough descriptions |
+
+### Thinking Tools
+
+| Skill | Platform | Description |
+|-------|----------|-------------|
+| [reasoning-playbook](skills/thinking-tools/reasoning-playbook/) | All | 8 structured reasoning frameworks (first principles, pre-mortems, trade-offs, etc.) |
+| [analogy-engine](skills/thinking-tools/analogy-engine/) | All | Generates precise, non-cliche analogies for complex concepts |
+| [assumption-hunter](skills/thinking-tools/assumption-hunter/) | All | Surfaces hidden assumptions in arguments, plans, and proposals |
+| [decision-autopsist](skills/thinking-tools/decision-autopsist/) | All | Reconstructs why a decision played out the way it did |
+| [hype-deflator](skills/thinking-tools/hype-deflator/) | All | Separates signal from noise in tech trends and pitches |
+| [mental-model-mapper](skills/thinking-tools/mental-model-mapper/) | All | Maps mental models to any domain or problem, Munger-style |
+| [steelman-builder](skills/thinking-tools/steelman-builder/) | All | Constructs the strongest possible version of opposing arguments |
+| [subtext-reader](skills/thinking-tools/subtext-reader/) | All | Surfaces what's not being said in emails, messages, and conversations |
 
 ## Quick Start
 
@@ -18,8 +38,9 @@ Each skill is a self-contained folder with a `SKILL.md` definition and optional 
 **Option A — npx (easiest)**
 
 ```bash
-npx skillforge install obsidian/obsidian-save-cloud
-npx skillforge install thinking-patterns            # installs all skills in the group
+npx skillforge install thinking-tools/analogy-engine
+npx skillforge install thinking-tools                  # installs all 8 thinking tools
+npx skillforge install prompts                         # installs all prompt skills
 ```
 
 **Option B — Install script**
@@ -27,8 +48,9 @@ npx skillforge install thinking-patterns            # installs all skills in the
 ```bash
 git clone https://github.com/gouthi/skillforge.git
 cd skillforge
-./install.sh obsidian/obsidian-save-cloud thinking-patterns
-./install.sh --platform cursor thinking-patterns    # install to Cursor's skill dir
+./install.sh thinking-tools/analogy-engine
+./install.sh thinking-tools                            # install entire group
+./install.sh --platform cursor thinking-tools          # install to Cursor's skill dir
 ```
 
 **Option C — Sparse checkout (developers)**
@@ -36,14 +58,14 @@ cd skillforge
 ```bash
 git clone --filter=blob:none --sparse https://github.com/gouthi/skillforge.git
 cd skillforge
-git sparse-checkout add skills/obsidian/obsidian-save-cloud
+git sparse-checkout add skills/thinking-tools/analogy-engine
 ```
 
 **Option D — Direct download (single file)**
 
 ```bash
 curl -sL -o SKILL.md \
-  https://raw.githubusercontent.com/gouthi/skillforge/main/skills/obsidian/obsidian-save-cloud/SKILL.md
+  https://raw.githubusercontent.com/gouthi/skillforge/main/skills/thinking-tools/analogy-engine/SKILL.md
 ```
 
 See [docs/installation.md](docs/installation.md) for all installation methods including remote one-liners and GitHub Releases.
@@ -53,14 +75,19 @@ See [docs/installation.md](docs/installation.md) for all installation methods in
 ```
 skillforge/
 ├── skills/
-│   ├── obsidian/                    # Group: Obsidian-related skills
-│   │   └── obsidian-save-cloud/     # Save notes to Obsidian via Google Drive
-│   │       ├── SKILL.md
-│   │       └── README.md
-│   └── thinking-patterns/           # Group: Structured reasoning patterns
-│       └── thinking-patterns/       # Core thinking patterns skill
-│           ├── SKILL.md
-│           └── README.md
+│   ├── obsidian/                    # Group: Obsidian vault integrations
+│   │   └── obsidian-save-cloud/
+│   ├── prompts/                     # Group: Prompt engineering skills
+│   │   └── prompt-archeologist/
+│   └── thinking-tools/              # Group: Reasoning and analysis skills
+│       ├── reasoning-playbook/
+│       ├── analogy-engine/
+│       ├── assumption-hunter/
+│       ├── decision-autopsist/
+│       ├── hype-deflator/
+│       ├── mental-model-mapper/
+│       ├── steelman-builder/
+│       └── subtext-reader/
 ├── shared/                          # Common templates and utilities
 ├── docs/                            # Guides and references
 ├── bin/                             # CLI for npx support
