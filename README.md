@@ -11,6 +11,7 @@ Each skill is a self-contained folder with a `SKILL.md` definition and optional 
 | Skill | Platform | Description |
 |-------|----------|-------------|
 | [obsidian-save-cloud](skills/obsidian/obsidian-save-cloud/) | claude.ai | Save conversation content to an Obsidian vault on Google Drive |
+| [obsidian-save-local](skills/obsidian/obsidian-save-local/) | Claude Code, Cursor | Save content to a local Obsidian vault via the Obsidian CLI |
 
 ### Prompts
 
@@ -76,7 +77,8 @@ See [docs/installation.md](docs/installation.md) for all installation methods in
 skillforge/
 ├── skills/
 │   ├── obsidian/                    # Group: Obsidian vault integrations
-│   │   └── obsidian-save-cloud/
+│   │   ├── obsidian-save-cloud/
+│   │   └── obsidian-save-local/
 │   ├── prompts/                     # Group: Prompt engineering skills
 │   │   └── prompt-archeologist/
 │   └── thinking-tools/              # Group: Reasoning and analysis skills
