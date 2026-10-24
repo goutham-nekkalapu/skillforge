@@ -12,7 +12,7 @@ description: >
   Udemy, or any online course platform in the context of note-taking.
   Always trigger on any variation of "course notes", "lecture notes",
   "study notes from video", or "transcript to notes" — even if the word
-  "distill" is never used.
+  "distill" is never used. For a YouTube link, use yt-notes instead.
 ---
 
 # Lecture Distiller

@@ -1,30 +1,24 @@
 ---
 name: obsidian-save-cloud
 description: >
-  Save conversation summaries, reports, brainstorm notes, and markdown files to an Obsidian vault
-  stored on Google Drive — using the Google Drive MCP connector. Use this skill whenever the user
-  says things like "save this to my vault", "push this to Obsidian", "export to my notes",
-  "save summary to Drive", "send to vault", "write to Obsidian", or any variation of saving
-  conversation content to an Obsidian vault or Google Drive notes folder. Also trigger when the
-  user asks to "remember this in my notes", "archive this discussion", or "export this chat".
-  This skill is for cloud/web environments (claude.ai) — it writes via the Google Drive MCP
-  connector, not the local filesystem. If the Google Drive connector is not connected, the skill
-  will guide the user to enable it.
+  Turn conversation content (summaries, reports, brainstorms) into a formatted Obsidian note
+  and save it to the user's vault on Google Drive. Use this skill whenever the user says
+  things like "save this to my vault", "push this to Obsidian", "export to my notes",
+  "send to vault", "write to Obsidian", or any variation of saving conversation content to
+  an Obsidian vault. Also trigger when the user asks to "remember this in my notes",
+  "archive this discussion", or "export this chat". This skill decides the note's content,
+  frontmatter, filename and folder; the gdrive-save skill does the actual Google Drive upload.
+  For saving existing files (HTML pages, JSON, a file as-is) to Drive without turning them
+  into a note, use gdrive-save directly. This skill is for cloud/web environments (claude.ai).
 ---
 
 # obsidian-save-cloud
 
-Save markdown files to an Obsidian vault on Google Drive from claude.ai conversations.
+Turn conversation content into an Obsidian note and save it to a vault on Google Drive from claude.ai conversations.
 
 ## Prerequisites
 
-This skill requires the **Google Drive MCP connector** to be connected in claude.ai.
-If it is not connected, tell the user:
-
-> "To save files to your Google Drive, I need the Google Drive connector enabled.
-> You can connect it from the tools menu (the puzzle piece icon) in this chat."
-
-Then use `suggest_connectors` to show the Google Drive connector for easy one-click setup.
+This skill saves through the **gdrive-save** skill, which needs the **Google Drive connector** connected in claude.ai. If the connector isn't connected, gdrive-save tells the user and offers to connect it.
 
 ## How It Works
 
@@ -90,13 +84,16 @@ Generate 2-4 relevant tags based on the discussion topic.
 
 ### 4. Write the File
 
-Use the Google Drive MCP tool to create the file at the resolved path.
+Hand the note to the **gdrive-save** skill with:
+- destination: `{vault_name}/{folder}`
+- the file: `{filename}.md` with the content from step 3
+- conflict rule: keep both (a new note never overwrites an existing one), unless the user asked to update a note they saved earlier
 
-The typical tool call sequence:
-1. Search for the vault folder to confirm it exists (use `gdrive_search` or similar)
-2. Create the file in the target folder (use `gdrive_create_file` or `gdrive_upload`)
+gdrive-save creates missing folders, keeps the file as real markdown (not a Google Doc, which Obsidian can't open), and returns the Drive path and link.
 
-If the vault or folder doesn't exist on Drive, inform the user and ask whether to create it.
+If the **vault folder itself** doesn't exist on Drive, ask the user whether the vault name is right before creating it, since a typo would create a whole new vault folder.
+
+If gdrive-save isn't installed, use the Google Drive connector directly: find or create each folder (search by title + `parentId`, following `nextPageToken` to the end), then `create_file` with `textContent`, `contentMimeType: "text/markdown"` and `disableConversionToGoogleType: true`.
 
 ### 5. Confirm to the User
 
@@ -141,7 +138,6 @@ save that content directly rather than summarizing the conversation.
 
 ## Error Handling
 
-- **Drive connector not connected**: Guide the user to enable it, use `suggest_connectors`
-- **Vault folder not found**: Ask if user wants to create it, or if the path is wrong
-- **Permission error**: Suggest the user check their Google Drive MCP permissions
-- **File already exists**: Append a short suffix (e.g., `-v2`) rather than overwriting
+- **Drive connector not connected / permission errors**: handled by gdrive-save. Pass its message on to the user.
+- **Vault folder not found**: Ask if the vault name is right before creating it.
+- **File already exists**: Keep both (gdrive-save adds ` (2)`), unless the user asked to update the earlier note.
