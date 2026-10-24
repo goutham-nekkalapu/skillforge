@@ -9,7 +9,7 @@ description: >
   This skill is for local environments (Claude Code, Claude Desktop, CLI agents) where the
   Obsidian CLI is available. It uses the `obsidian` command to create, append, and manage
   notes — no direct filesystem writes needed. Do NOT use this skill on claude.ai — use
-  obsidian-save-cloud instead.
+  gdrive-save instead (it saves vault notes to Google Drive).
 ---
 
 # obsidian-save-local

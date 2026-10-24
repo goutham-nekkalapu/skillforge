@@ -66,7 +66,7 @@ Fixes worth suggesting when relevant:
 
 ## Step 4: Make sure the files persist
 
-- **Local (Claude Code, Cursor, Claude desktop with a linked computer):** the files are already in `notes_root`. If `notes_root` sits inside the user's Google Drive folder, Drive syncs it.
+- **Local (Claude Code, Cursor, or any agent running on the user's own computer):** the files are already in `notes_root`. If `notes_root` sits inside the user's Google Drive folder, Drive syncs it.
 - **Cloud sandbox (claude.ai web, mobile, desktop chat):** the sandbox disk disappears after the session, so save `meta.json` and `transcript - <id>.md` to Google Drive at `<drive_root>/_sources/<folder name>/` using the **gdrive-save** skill (conflict rule: `replace`). Skip `transcript.json` on Drive: it duplicates the markdown and costs a lot of tokens to upload.
   - If gdrive-save isn't installed, do the same directly with the Google Drive connector: find or create each folder (search by title + `parentId`, following `nextPageToken` to the end), then `create_file` with `textContent`, the right `contentMimeType` and `disableConversionToGoogleType: true`. To replace a file, trash the old one first.
   - Before fetching on claude.ai, it's worth checking Drive for an existing package: search `<drive_root>/_sources` for a folder whose title contains ` - <video_id>` and reuse its files instead of spending credits again.

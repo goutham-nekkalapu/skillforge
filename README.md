@@ -18,13 +18,12 @@ Each skill is a self-contained folder with a `SKILL.md` definition and optional 
 
 | Skill | Platform | Description |
 |-------|----------|-------------|
-| [gdrive-save](skills/google-drive/gdrive-save/) | claude.ai | Save markdown, HTML (with JS), JSON and other files to an exact Drive folder without converting them to Google Docs |
+| [gdrive-save](skills/google-drive/gdrive-save/) | claude.ai | Save files (markdown, HTML with JS, JSON…) or conversation notes to an exact Drive folder, e.g. your Obsidian vault, without converting them to Google Docs |
 
 ### Obsidian
 
 | Skill | Platform | Description |
 |-------|----------|-------------|
-| [obsidian-save-cloud](skills/obsidian/obsidian-save-cloud/) | claude.ai | Save conversation content as a note in an Obsidian vault on Google Drive (via gdrive-save) |
 | [obsidian-save-local](skills/obsidian/obsidian-save-local/) | Claude Code, Cursor | Save content to a local Obsidian vault via the Obsidian CLI |
 
 ### Prompts
@@ -109,7 +108,6 @@ skillforge/
 │   │   ├── yt-notes/
 │   │   └── yt-transcript/
 │   ├── obsidian/                    # Group: Obsidian vault integrations
-│   │   ├── obsidian-save-cloud/
 │   │   └── obsidian-save-local/
 │   ├── prompts/                     # Group: Prompt engineering skills
 │   │   └── prompt-archeologist/

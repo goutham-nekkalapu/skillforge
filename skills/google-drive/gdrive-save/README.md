@@ -1,15 +1,17 @@
 # gdrive-save
 
-Saves files to an exact folder in your Google Drive as real files (markdown, HTML with JavaScript and CSS, JSON, CSV, SVG, code, small images or PDFs) instead of converting them to Google Docs.
+Saves files to an exact folder in your Google Drive as real files (markdown, HTML with JavaScript and CSS, JSON, CSV, SVG, code, small images or PDFs) instead of converting them to Google Docs. It can also turn the conversation into an Obsidian note and save it to your vault.
 
 ## What It Does
 
 - Creates any missing folders on the path.
 - Uploads each file with its real type, so a `.md` stays markdown (Obsidian can open it) and an `.html` page keeps its scripts.
 - Replaces existing files instead of creating `file (1).md` duplicates, when you or a calling skill say to update. Otherwise it asks.
+- Remembers a **default folder** (e.g. your vault's `Inbox`) when Claude's memory is on, so "save this to Drive" needs no path.
+- **Saves the conversation as a note**: "save this to my vault" writes a summary with frontmatter (`title`, `date`, `source`, `type`, `tags`) as `YYYY-MM-DD-slug.md`. This replaces the former `obsidian-save-cloud` skill.
 - Tells you where files will go before saving, and reports each file's Drive path and link afterwards.
 
-Other skills use it to persist output from claude.ai, where the sandbox disk is temporary. [yt-notes](../../learning/yt-notes/) and [yt-transcript](../../learning/yt-transcript/) do, and [obsidian-save-cloud](../../obsidian/obsidian-save-cloud/) uses it to write vault notes.
+Other skills use it to persist output from claude.ai, where the sandbox disk is temporary: [yt-notes](../../learning/yt-notes/) and [yt-transcript](../../learning/yt-transcript/).
 
 ## Platform
 
@@ -31,6 +33,8 @@ Good to know:
 "Save this page to my Drive in Projects/Demos"
 "Upload these notes to Google Drive under Notes/AI"
 "Put the HTML you just made in my Drive folder"
+"Save this discussion to my vault"
+"Set my default Drive folder to SecondBrain/Inbox"
 ```
 
 ## Install

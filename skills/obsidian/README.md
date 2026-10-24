@@ -6,8 +6,9 @@ Skills for integrating with [Obsidian](https://obsidian.md) vaults — saving no
 
 | Skill | Platform | Description |
 |-------|----------|-------------|
-| [obsidian-save-cloud](obsidian-save-cloud/) | claude.ai | Save conversation content as a note in an Obsidian vault on Google Drive (uses [gdrive-save](../google-drive/gdrive-save/)) |
 | [obsidian-save-local](obsidian-save-local/) | Claude Code, Cursor | Save content to a local Obsidian vault via the Obsidian CLI |
+
+On claude.ai, use [google-drive/gdrive-save](../google-drive/gdrive-save/) to save notes to a vault on Google Drive ("save this to my vault"). It replaces the former `obsidian-save-cloud` skill.
 
 ## Install All Obsidian Skills
 

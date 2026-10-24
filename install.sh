@@ -12,7 +12,7 @@
 #   SKILLS_INSTALL_DIR  — target directory (overrides --platform)
 #
 # Examples:
-#   ./install.sh obsidian/obsidian-save-cloud
+#   ./install.sh google-drive/gdrive-save
 #   ./install.sh thinking-patterns
 #   ./install.sh --platform cursor thinking-patterns
 #   ./install.sh --all
@@ -108,13 +108,13 @@ usage() {
   echo ""
   echo "Arguments:"
   echo "  <group>         Install all skills in a group (e.g., obsidian)"
-  echo "  <group/skill>   Install a specific skill (e.g., obsidian/obsidian-save-cloud)"
+  echo "  <group/skill>   Install a specific skill (e.g., google-drive/gdrive-save)"
   echo ""
   echo "Environment:"
   echo "  SKILLS_INSTALL_DIR  Target directory (overrides --platform)"
   echo ""
   echo "Examples:"
-  echo "  $0 obsidian/obsidian-save-cloud"
+  echo "  $0 google-drive/gdrive-save"
   echo "  $0 thinking-patterns"
   echo "  $0 --platform cursor obsidian"
   echo "  $0 --all"

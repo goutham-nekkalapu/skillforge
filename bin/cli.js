@@ -37,7 +37,7 @@ ${BOLD}Options:${NC}
   --dir <path>     Custom install directory (overrides --platform)
 
 ${BOLD}Examples:${NC}
-  npx skillforge install obsidian/obsidian-save-cloud
+  npx skillforge install google-drive/gdrive-save
   npx skillforge install thinking-patterns
   npx skillforge install --platform cursor obsidian
   npx skillforge list

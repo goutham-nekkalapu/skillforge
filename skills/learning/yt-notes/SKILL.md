@@ -60,6 +60,8 @@ python3 <skill_dir>/scripts/notes_paths.py prepare --source "<source_dir>" --top
 
 It prints JSON with `note_file`, `interactive_file`, `transcript_wikilink`, `interactive_wikilink`, `interactive_embed_block` and `today`. If a note for this video already exists, it returns that location (`regenerating_existing_note: true`), and you overwrite it there rather than creating a duplicate. Only pass `--new-location` if the user wants a separate copy.
 
+In a cloud sandbox the user's earlier notes are on Drive, not on this disk, so first search Drive for `fullText contains '<video_id>' and title contains '.md'` (following `nextPageToken`). If a note for this video exists, reuse its topic and title in `prepare`, so the regenerated note replaces it instead of landing in a second folder.
+
 ## Step 6: Write the note
 
 Follow `references/note-structure.md` (read it now): frontmatter, TL;DR, Why this matters, Big picture, Core concepts, How it works, Worked examples, Comparisons, Pitfalls, Takeaways, Glossary, Related, Source. Use `references/visuals.md` for diagrams and Obsidian-safe Mermaid syntax.
