@@ -88,3 +88,20 @@ Settings → Files & links → **Show all file types**. Install **HTML Experienc
 | `scripts/notes_paths.py` | Folder naming, regenerate-in-place, topic indexes |
 | `scripts/check_note.py` | Checks frontmatter, renders diagrams, tests the HTML page |
 | `examples/sample-output/` | A sample note (made from a short test transcript, not a real video) |
+
+## Future Improvements
+
+Today every diagram is Mermaid (rendered natively by Obsidian, but fixed layout) plus optional interactive HTML. Next steps for richer, editable visuals:
+
+| Idea | What it adds | How |
+|---|---|---|
+| **Excalidraw diagrams** | Hand-drawn style diagrams you can rearrange and annotate while revising | Generate 1–2 key diagrams per note as Obsidian Excalidraw files (`.md` with `excalidraw-plugin: parsed` frontmatter) and embed them with `![[…]]`. Delegate to an existing skill such as [excalidraw-diagram](https://skillselion.com/skills/axtonliu/axton-obsidian-visual-skills/excalidraw-diagram) when it's installed, instead of reimplementing the format. Needs the [Obsidian Excalidraw plugin](https://github.com/zsviczian/obsidian-excalidraw-plugin). |
+| **tldraw boards** | A whiteboard-style concept map per note or topic | The official [tldraw Obsidian plugin](https://community.obsidian.md/plugins/tldraw) stores drawings as markdown files. A tldraw MCP server, where connected, lets Claude build the board on a live canvas, which could then be exported into the vault. Inline previews inside notes are still on the plugin's roadmap, so link boards rather than embedding them. |
+| **Obsidian Canvas per topic** | A visual map of all notes in a topic and how they link | Generate `<Topic>/<Topic>.canvas` (Obsidian's native JSON format; no plugin, works on mobile) from the topic index: one card per note, edges from `[[wikilinks]]`. Rebuild it with `notes_paths.py index`. Probably the easiest first step. |
+| **Static image fallback** | Diagrams visible where Mermaid or JavaScript don't run (Drive preview, other markdown apps) | Export each Mermaid diagram to SVG with `mmdc` (already used by `check_note.py`) and keep it next to the note. |
+
+Design guardrails for these:
+- Add a `visual_formats` config setting (default `["mermaid"]`), so richer formats are opt-in and Mermaid always remains as a fallback that renders everywhere.
+- Prefer calling an installed visual skill over adding format-specific code here.
+- Extend `check_note.py` to validate each new format (e.g. parse the Excalidraw/Canvas JSON, check embeds resolve).
+- These are all plain text files (`.md`, `.canvas`, `.excalidraw` JSON), so [gdrive-save](../../google-drive/gdrive-save/) can already save them from claude.ai.
