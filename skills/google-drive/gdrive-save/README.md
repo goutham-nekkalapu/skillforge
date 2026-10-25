@@ -4,11 +4,11 @@ Saves files to an exact folder in your Google Drive as real files (markdown, HTM
 
 ## What It Does
 
-- Creates any missing folders on the path.
+- Creates any missing folders on the path. New folder and file names use underscores instead of spaces (`Project_Notes/ring_demo.html`); existing folders keep their names.
 - Uploads each file with its real type, so a `.md` stays markdown (Obsidian can open it) and an `.html` page keeps its scripts.
 - Replaces existing files instead of creating `file (1).md` duplicates, when you or a calling skill say to update. Otherwise it asks.
 - Remembers a **default folder** (e.g. your vault's `Inbox`) when Claude's memory is on, so "save this to Drive" needs no path.
-- **Saves the conversation as a note**: "save this to my vault" writes a summary with frontmatter (`title`, `date`, `source`, `type`, `tags`) as `YYYY-MM-DD-slug.md`. This replaces the former `obsidian-save-cloud` skill.
+- **Saves the conversation as a note**: "save this to my vault" writes a summary with frontmatter (`title`, `date`, `source`, `type`, `tags`) as `YYYY-MM-DD_slug.md`. This replaces the former `obsidian-save-cloud` skill.
 - Tells you where files will go before saving, and reports each file's Drive path and link afterwards.
 
 Other skills use it to persist output from claude.ai, where the sandbox disk is temporary: [yt-notes](../../learning/yt-notes/) and [yt-transcript](../../learning/yt-transcript/).

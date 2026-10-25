@@ -7,7 +7,7 @@ Sections marked *(if relevant)* are left out when the video has nothing for them
 ````markdown
 ---
 title: "Consistent Hashing"
-aliases: ["Consistent Hashing Explained in 10 Minutes"]   # the original video title
+aliases: ["Consistent Hashing", "Consistent Hashing Explained in 10 Minutes"]   # the title with spaces, then the original video title
 summary: "How consistent hashing spreads keys over a ring so adding or removing servers only moves ~1/N of keys."
 topic: "System Design"
 tags: [system-design, distributed-systems, hashing, load-balancing]
@@ -18,7 +18,7 @@ video_id: "..."
 channel: "..."
 published: "2023-04-01"
 duration: "12:34"
-transcript: "[[transcript - VIDEO_ID|Full transcript]]"
+transcript: "[[transcript_VIDEO_ID|Full transcript]]"
 transcript_method: "ytdlp (manual)"
 created: "2026-10-24"
 ---
@@ -60,12 +60,12 @@ The handful of ideas worth remembering, phrased as rules of thumb.
 | Term | Meaning |
 
 ## Related
-- [[Wikilinks]] to concepts that deserve their own notes (prefer names of existing notes; the list of existing topics comes from `notes_paths.py where`)
+- Wikilinks to concepts that deserve their own notes, written as `[[File_Name|Readable Name]]` (e.g. `[[Cache_Stampede|Cache Stampede]]`) because note files use underscores. Prefer names of existing notes; the list of existing topics comes from `notes_paths.py where`.
 - Links from the video description that are worth keeping, with a few words on what each is
 
 ## Source
 - Video: [title](url) · Channel · published date · duration
-- [[transcript - VIDEO_ID|Full transcript]] · transcript source and kind (warn if auto or AI-generated)
+- [[transcript_VIDEO_ID|Full transcript]] · transcript source and kind (warn if auto or AI-generated)
 ````
 
 ## Writing rules
@@ -79,7 +79,7 @@ The handful of ideas worth remembering, phrased as rules of thumb.
 - **Concrete beats abstract.** Every core concept gets an example with actual values, code or a scenario.
 - **Use the structure of the video, not its order.** Chapters help to understand the flow, but organise the note by concept so it works as a reference.
 - **Scannable.** Short paragraphs, bold the key term where it's defined, tables for comparisons, callouts for warnings and tips. Keep heading levels consistent (`##` sections, `###` concepts).
-- **Obsidian-friendly.** Wikilinks `[[Like This]]`, callouts `> [!tip]`, tags in frontmatter as lowercase-hyphenated words. Write `==highlight==` sparingly.
+- **Obsidian-friendly.** Wikilinks `[[File_Name|Readable Name]]` (the target is the underscore file name, the label after `|` is what readers see), callouts `> [!tip]`, tags in frontmatter as lowercase-hyphenated words. Write `==highlight==` sparingly.
 - **Length follows content.** A dense 40-minute lecture may need 2,500+ words. A 6-minute explainer might need 700. Cover everything substantive; cut filler such as sponsor reads, "like and subscribe" and long anecdotes.
 
 ## Quick mode

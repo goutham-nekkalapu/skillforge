@@ -10,7 +10,7 @@ Tries three sources in order and stops at the first that works:
 2. **TranscriptAPI**: YouTube captions when YouTube blocks yt-dlp (common on cloud and VPN IPs). It can't transcribe videos without captions.
 3. **Supadata**: existing captions, or AI speech-to-text when a video has no captions.
 
-When a key is needed but missing, it stops and says which key, where to get it and where to put it. Results are saved to `<notes_root>/_sources/<Video Title> - <id>/` (`meta.json`, a readable `transcript - <id>.md`, and raw `transcript.json`) and reused on later runs, so the same video never costs credits twice. [yt-notes](../yt-notes/) uses it to get the transcript before writing notes.
+When a key is needed but missing, it stops and says which key, where to get it and where to put it. Results are saved to `<notes_root>/_sources/<Video_Title>_<id>/` (`meta.json`, a readable `transcript_<id>.md`, and raw `transcript.json`) and reused on later runs, so the same video never costs credits twice. Folder and file names use underscores instead of spaces. [yt-notes](../yt-notes/) uses it to get the transcript before writing notes.
 
 ## Platform
 

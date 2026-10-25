@@ -8,13 +8,15 @@ description: Fetch and save everything about a YouTube video — title, channel,
 Turn a YouTube URL into a saved source package that other skills (notably `yt-notes`) build on:
 
 ```
-<notes_root>/_sources/<Video Title> - <video_id>/
+<notes_root>/_sources/<Video_Title>_<video_id>/
   meta.json                     # title, channel, dates, tags, description, links, chapters, how the transcript was obtained
-  transcript - <video_id>.md    # readable in Obsidian: description, chapters, transcript grouped by chapter
+  transcript_<video_id>.md      # readable in Obsidian: description, chapters, transcript grouped by chapter
   transcript.json               # raw timed segments [{start, text}]
 ```
 
 The default `notes_root` is `~/YouTubeNotes` (the device's home folder). The user changes it in the config file `~/.yt-notes/config.json`, which is shared with `yt-notes`.
+
+**Naming rule:** folder and file names use underscores instead of spaces (`Consistent_Hashing_Explained_abc123XYZ00/`). The script applies this; follow it too for anything you create by hand, such as Drive folders on claude.ai. Titles inside files keep their normal spaces.
 
 ## Step 1: Tell the user where things will be saved (every time)
 
@@ -67,9 +69,9 @@ Fixes worth suggesting when relevant:
 ## Step 4: Make sure the files persist
 
 - **Local (Claude Code, Cursor, or any agent running on the user's own computer):** the files are already in `notes_root`. If `notes_root` sits inside the user's Google Drive folder, Drive syncs it.
-- **Cloud sandbox (claude.ai web, mobile, desktop chat):** the sandbox disk disappears after the session, so save `meta.json` and `transcript - <id>.md` to Google Drive at `<drive_root>/_sources/<folder name>/` using the **gdrive-save** skill (conflict rule: `replace`). Skip `transcript.json` on Drive: it duplicates the markdown and costs a lot of tokens to upload.
+- **Cloud sandbox (claude.ai web, mobile, desktop chat):** the sandbox disk disappears after the session, so save `meta.json` and `transcript_<id>.md` to Google Drive at `<drive_root>/_sources/<folder name>/` using the **gdrive-save** skill (conflict rule: `replace`). Skip `transcript.json` on Drive: it duplicates the markdown and costs a lot of tokens to upload.
   - If gdrive-save isn't installed, do the same directly with the Google Drive connector: find or create each folder (search by title + `parentId`, following `nextPageToken` to the end), then `create_file` with `textContent`, the right `contentMimeType` and `disableConversionToGoogleType: true`. To replace a file, trash the old one first.
-  - Before fetching on claude.ai, it's worth checking Drive for an existing package: search `<drive_root>/_sources` for a folder whose title contains ` - <video_id>` and reuse its files instead of spending credits again.
+  - Before fetching on claude.ai, it's worth checking Drive for an existing package: search `<drive_root>/_sources` for a folder whose title ends with `_<video_id>` (older packages end with ` - <video_id>`) and reuse its files instead of spending credits again.
 
 Finish by telling the user exactly where the package was saved (local path and/or Drive path).
 

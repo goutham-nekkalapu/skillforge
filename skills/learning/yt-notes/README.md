@@ -4,7 +4,7 @@ Paste a YouTube link, ask for notes, and get deep, visual, Obsidian-ready study 
 
 ## What It Does
 
-Fetches the video's transcript, description and chapters (via [yt-transcript](../yt-transcript/)), then writes notes with a TL;DR, core concepts, Mermaid diagrams, worked examples, comparison tables, pitfalls and `[[wikilinks]]`. When a topic involves something changing step by step, it also builds an interactive HTML walkthrough. Notes are checked (diagrams must render) and organised as `<Topic>/<Note Title>/<Note Title>.md` with an auto-built index per topic.
+Fetches the video's transcript, description and chapters (via [yt-transcript](../yt-transcript/)), then writes notes with a TL;DR, core concepts, Mermaid diagrams, worked examples, comparison tables, pitfalls and `[[wikilinks]]`. When a topic involves something changing step by step, it also builds an interactive HTML walkthrough. Notes are checked (diagrams must render) and organised as `<Topic>/<Note_Title>/<Note_Title>.md` with an auto-built index per topic. Folder and file names use underscores instead of spaces (e.g. `System_Design/Consistent_Hashing/Consistent_Hashing.md`); titles inside the notes keep their spaces.
 
 Works together with:
 

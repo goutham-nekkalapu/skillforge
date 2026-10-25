@@ -736,15 +736,25 @@ def find_cached(cfg, vid):
     if not src.exists():
         return None
     for d in src.iterdir():
-        if d.is_dir() and d.name.endswith(f" - {vid}") and (d / "meta.json").exists():
+        # "<Title>_<id>" (current) or "<Title> - <id>" (older versions)
+        if d.is_dir() and (d.name.endswith(f"_{vid}") or d.name.endswith(f" - {vid}")) \
+                and (d / "meta.json").exists():
             return d
     return None
+
+
+def transcript_md_name(folder: Path, vid: str) -> str:
+    """Name of the transcript markdown in a package (handles the older "transcript - <id>.md")."""
+    for name in (f"transcript_{vid}.md", f"transcript - {vid}.md"):
+        if (folder / name).exists():
+            return name
+    return f"transcript_{vid}.md"
 
 
 def write_package(cfg, meta, segs, tinfo, log):
     vid = meta["video_id"]
     old = find_cached(cfg, vid)
-    folder = cfg["_sources"] / f"{C.safe_name(meta.get('title') or vid)} - {vid}"
+    folder = cfg["_sources"] / f"{C.safe_name(meta.get('title') or vid)}_{vid}"
     if old and old != folder:
         shutil.rmtree(old, ignore_errors=True)
     folder.mkdir(parents=True, exist_ok=True)
@@ -754,7 +764,10 @@ def write_package(cfg, meta, segs, tinfo, log):
     record = {**clean_meta, "transcript": tinfo, "fetch_log": log}
     (folder / "meta.json").write_text(json.dumps(record, indent=2, ensure_ascii=False), encoding="utf-8")
     (folder / "transcript.json").write_text(json.dumps(segs, ensure_ascii=False), encoding="utf-8")
-    md_name = f"transcript - {vid}.md"
+    md_name = f"transcript_{vid}.md"
+    legacy = folder / f"transcript - {vid}.md"
+    if legacy.exists():
+        legacy.unlink()
     (folder / md_name).write_text(render_transcript_md(clean_meta, segs, tinfo), encoding="utf-8")
     return folder, md_name
 
@@ -864,7 +877,7 @@ def main():
     cached = find_cached(cfg, vid)
     if cached and not args.force:
         rec = json.loads((cached / "meta.json").read_text(encoding="utf-8"))
-        md = f"transcript - {vid}.md"
+        md = transcript_md_name(cached, vid)
         print(f"\nAlready fetched earlier - reusing: {cached}  (use --force to re-fetch)")
         return emit(result_summary(cfg, cached, md, rec, rec.get("transcript", {}), rec.get("fetch_log", []),
                                    [], cached=True))

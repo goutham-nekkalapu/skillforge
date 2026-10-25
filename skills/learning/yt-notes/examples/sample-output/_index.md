@@ -7,4 +7,4 @@ type: yt-notes-index
 
 This page is rebuilt automatically; don't edit it.
 
-- [[System Design/_index|System Design]] (1)
+- [[System_Design/_index|System Design]] (1)

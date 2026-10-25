@@ -28,7 +28,7 @@ A companion `.html` file for ideas that are easier to understand by watching the
 Put it in the relevant section of the note (usually "How it works"), not at the end:
 
 1. If `interactive_embed_block` from `prepare` is not null, paste that block. It's an `html-embed` code block, rendered inline by the Obsidian **HTML Embed** plugin.
-2. Always also add the wikilink from `interactive_wikilink` (`[[<Title> - interactive.html|▶ Open the interactive walkthrough]]`). It opens the file in an HTML viewer plugin (HTML Experience, Vault HTML Preview, etc.) and still works on mobile or without the embed plugin.
+2. Always also add the wikilink from `interactive_wikilink` (`[[<Note_Title>_interactive.html|▶ Open the interactive walkthrough]]`). It opens the file in an HTML viewer plugin (HTML Experience, Vault HTML Preview, etc.) and still works on mobile or without the embed plugin.
 3. Keep a static Mermaid diagram of the same idea in the note, so it still makes sense where HTML can't run.
 
 Obsidian needs **Settings → Files & links → Show all file types** turned on, plus an HTML viewer plugin with JavaScript enabled, to open the file.

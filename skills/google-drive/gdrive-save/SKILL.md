@@ -14,18 +14,18 @@ This skill uses the Google Drive connector tools `search_files`, `create_file` a
 ## 1. Work out what to save and where (and say it first)
 
 - **Files**: content from the conversation (a page or note Claude just wrote) or files on disk. Read files from disk exactly; don't retype or "clean up" content.
-- **Destination**: a path from the top of My Drive, like `Notes/YouTube Notes/System Design`. "My Drive/…" means the same thing. Shared drives are out of scope. Resolve it in this order:
+- **Destination**: a path from the top of My Drive, like `Notes/YouTube_Notes/System_Design`. "My Drive/…" means the same thing. Shared drives are out of scope. Resolve it in this order:
   1. The path the user or calling skill gives for this save. Use it for this save only; don't change the default.
   2. The **default folder**: a folder saved in Claude's memory (look for a memory like "gdrive-save default folder: Vault/Inbox"), or the folder already used earlier in this conversation.
-  3. Otherwise ask once (suggest `Claude Files`), and offer to remember the answer as the default folder if a memory tool is available.
+  3. Otherwise ask once (suggest `Claude_Files`), and offer to remember the answer as the default folder if a memory tool is available.
   When the user says "change my default folder to X" (or "my vault is X"), update that memory instead of saving anything.
-- **File names**: keep the given name and extension. When naming something new, use a readable name with the right extension (`Consistent Hashing.md`, `ring-demo.html`).
+- **Naming rule: underscores, not spaces.** Any folder or file name you create uses `_` between words, with the right extension (`Consistent_Hashing.md`, `ring_demo.html`, `Project_Notes/`). Folders that already exist are matched by their exact current name and never renamed, and a calling skill's names are used as given.
 - **If a file with the same name already exists**:
   - Replace it when the user or the calling skill says to update, overwrite or regenerate, or when re-saving a newer version of the same thing in this conversation.
   - Otherwise ask whether to replace it or keep both.
   - When nobody can be asked (scheduled or unattended run), keep both by adding ` (2)` before the extension, and say so.
 
-Before uploading, tell the user in one line where the files will go, e.g. *"Saving 2 files to My Drive/Notes/YouTube Notes/System Design/Consistent Hashing/"*.
+Before uploading, tell the user in one line where the files will go, e.g. *"Saving 2 files to My Drive/Notes/YouTube_Notes/System_Design/Consistent_Hashing/"*.
 
 ## 2. Find or create each folder in the path
 
@@ -90,7 +90,7 @@ List each saved file with its full Drive path and `viewUrl`, note any file that 
 When the user asks to save the discussion itself ("save this to my vault", "export this chat", "archive this discussion"), write a note first, then save it with the steps above (destination: the default folder unless they name one; on a name clash, keep both).
 
 - **Content**: synthesise, don't paste the transcript. Include a clear title, the key points and conclusions, decisions made, action items, important technical details or code (fenced, with a language), and links mentioned. If the user points at something specific ("save the report you just wrote"), save that as it is instead of summarising.
-- **File name**: `YYYY-MM-DD-<short-lowercase-slug>.md`, e.g. `2026-04-11-brainstorm-fraud-detection.md`.
+- **File name**: `YYYY-MM-DD_<short_lowercase_slug>.md`, e.g. `2026-04-11_brainstorm_fraud_detection.md`.
 - **Frontmatter**, so notes stay consistent and filterable in Obsidian (e.g. with Dataview):
 
 ```markdown
@@ -107,7 +107,7 @@ tags:
 # Fraud Detection Brainstorm
 ```
 
-Use 2–4 lowercase, hyphenated tags. Then confirm with the saved path, e.g. *"Saved to SecondBrain/Inbox/2026-04-11-brainstorm-fraud-detection.md. It will sync via Google Drive."*
+Use 2–4 lowercase, hyphenated tags. Then confirm with the saved path, e.g. *"Saved to SecondBrain/Inbox/2026-04-11_brainstorm_fraud_detection.md. It will sync via Google Drive."*
 
 ## Notes for skills that call this one
 
