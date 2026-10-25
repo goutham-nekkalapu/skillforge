@@ -10,13 +10,20 @@ Each skill is a self-contained folder with a `SKILL.md` definition and optional 
 
 | Skill | Platform | Description |
 |-------|----------|-------------|
-| [lecture-distiller](skills/learning/lecture-distiller/) | All | Distills video transcripts and screenshots into structured, scannable study notes |
+| [lecture-distiller](skills/learning/lecture-distiller/) | All | Distills video transcripts and screenshots you already have into structured, scannable study notes |
+| [yt-notes](skills/learning/yt-notes/) | All | Turns a YouTube link into deep, visual, Obsidian-ready notes saved by topic |
+| [yt-transcript](skills/learning/yt-transcript/) | All | Saves a YouTube video's transcript, description and chapters (yt-dlp → TranscriptAPI → Supadata) |
+
+### Google Drive
+
+| Skill | Platform | Description |
+|-------|----------|-------------|
+| [gdrive-save](skills/google-drive/gdrive-save/) | claude.ai | Save files (markdown, HTML with JS, JSON…) or conversation notes to an exact Drive folder, e.g. your Obsidian vault, without converting them to Google Docs |
 
 ### Obsidian
 
 | Skill | Platform | Description |
 |-------|----------|-------------|
-| [obsidian-save-cloud](skills/obsidian/obsidian-save-cloud/) | claude.ai | Save conversation content to an Obsidian vault on Google Drive |
 | [obsidian-save-local](skills/obsidian/obsidian-save-local/) | Claude Code, Cursor | Save content to a local Obsidian vault via the Obsidian CLI |
 
 ### Prompts
@@ -94,10 +101,13 @@ See [docs/installation.md](docs/installation.md) for all installation methods in
 ```
 skillforge/
 ├── skills/
+│   ├── google-drive/                # Group: Google Drive file skills
+│   │   └── gdrive-save/
 │   ├── learning/                    # Group: Study and learning skills
-│   │   └── lecture-distiller/
+│   │   ├── lecture-distiller/
+│   │   ├── yt-notes/
+│   │   └── yt-transcript/
 │   ├── obsidian/                    # Group: Obsidian vault integrations
-│   │   ├── obsidian-save-cloud/
 │   │   └── obsidian-save-local/
 │   ├── prompts/                     # Group: Prompt engineering skills
 │   │   └── prompt-archeologist/

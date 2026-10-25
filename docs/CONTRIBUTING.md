@@ -10,6 +10,8 @@ Skills are organized into groups under `skills/`. Check the existing groups firs
 
 ```
 skills/
+├── google-drive/          # Google Drive file skills
+├── learning/              # Study and learning skills
 ├── obsidian/              # Obsidian vault integration skills
 ├── prompts/               # Prompt engineering and extraction skills
 └── thinking-tools/        # Reasoning, analysis, and communication skills

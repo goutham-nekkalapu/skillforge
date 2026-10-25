@@ -8,7 +8,7 @@ No clone needed — installs directly from GitHub:
 
 ```bash
 # Install a specific skill
-npx skillforge install obsidian/obsidian-save-cloud
+npx skillforge install google-drive/gdrive-save
 
 # Install all skills in a group
 npx skillforge install thinking-tools
@@ -75,7 +75,7 @@ git clone https://github.com/gouthi/skillforge.git
 cd skillforge
 
 # Install a specific skill
-./install.sh obsidian/obsidian-save-cloud
+./install.sh google-drive/gdrive-save
 
 # Install all skills in a group
 ./install.sh thinking-tools
@@ -109,7 +109,7 @@ Clone only the skills you need — nothing else gets downloaded:
 ```bash
 git clone --filter=blob:none --sparse https://github.com/gouthi/skillforge.git
 cd skillforge
-git sparse-checkout add skills/obsidian/obsidian-save-cloud skills/thinking-tools/reasoning-playbook
+git sparse-checkout add skills/google-drive/gdrive-save skills/thinking-tools/reasoning-playbook
 ```
 
 Add more skills later:
@@ -134,7 +134,7 @@ Install a skill directly without cloning the repo:
 # Single skill
 curl -sL https://github.com/gouthi/skillforge/archive/main.tar.gz \
   | tar xz --strip-components=3 -C ~/.claude/skills/ \
-  "skillforge-main/skills/obsidian/obsidian-save-cloud"
+  "skillforge-main/skills/google-drive/gdrive-save"
 ```
 
 **Pros:** Zero setup, works anywhere with curl.
@@ -158,7 +158,7 @@ When available, individual skill archives are published on the [Releases](https:
 
 ```
 skillforge-v1.0.0.tar.gz                    # full bundle
-skill-obsidian-save-cloud-v1.0.0.tar.gz     # individual
+skill-gdrive-save-v1.0.0.tar.gz             # individual
 skill-reasoning-playbook-v1.0.0.tar.gz      # individual
 ```
 
