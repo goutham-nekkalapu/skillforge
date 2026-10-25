@@ -14,8 +14,11 @@ Layout:
   <root>/_index.md                            all topics
   <root>/<Topic>/_index.md                    notes in a topic
   <root>/<Topic>/<Title>/<Title>.md           the note
-  <root>/<Topic>/<Title>/<Title> - interactive.html   (optional)
-  <root>/_sources/<Video Title> - <id>/       transcript package (yt-transcript)
+  <root>/<Topic>/<Title>/<Title>_interactive.html   (optional)
+  <root>/_sources/<Video_Title>_<id>/         transcript package (yt-transcript)
+
+Folder and file names use underscores instead of spaces (e.g. System_Design/
+Consistent_Hashing/Consistent_Hashing.md). Titles inside the notes keep spaces.
 """
 
 from __future__ import annotations
@@ -119,8 +122,8 @@ def cmd_prepare(cfg, args):
     note_dir.mkdir(parents=True, exist_ok=True)
 
     note_md = note_dir / f"{title}.md"
-    html = note_dir / f"{title} - interactive.html"
-    transcript_md = next(iter(src.glob("transcript - *.md")), None)
+    html = note_dir / f"{title}_interactive.html"
+    transcript_md = next(iter(sorted(src.glob("transcript_*.md")) + sorted(src.glob("transcript - *.md"))), None)
     vault = cfg.get("obsidian_vault_root") or ""
     embed_path = None
     if vault:
@@ -160,15 +163,15 @@ def rebuild_topic_index(root: Path, topic: str):
         rel = md.relative_to(tdir).with_suffix("").as_posix()
         rows.append({
             # "\|" because a bare pipe inside a table cell would split the column
-            "link": f"[[{rel}\\|{fm.get('title') or md.stem}]]",
+            "link": f"[[{rel}\\|{fm.get('title') or C.display_name(md.stem)}]]",
             "summary": (fm.get("summary") or "").replace("|", "/"),
             "channel": (fm.get("channel") or "").replace("|", "/"),
             "created": fm.get("created") or "",
             "status": fm.get("status") or "",
         })
     rows.sort(key=lambda r: r["created"], reverse=True)
-    lines = ["---", f"title: {json.dumps(topic + ' - index')}", "type: yt-notes-index", "---", "",
-             f"# {topic}", "", f"{len(rows)} note(s). This page is rebuilt automatically; don't edit it.", "",
+    lines = ["---", f"title: {json.dumps(C.display_name(topic) + ' - index')}", "type: yt-notes-index", "---", "",
+             f"# {C.display_name(topic)}", "", f"{len(rows)} note(s). This page is rebuilt automatically; don't edit it.", "",
              "| Note | Summary | Channel | Added | Status |", "|---|---|---|---|---|"]
     lines += [f"| {r['link']} | {r['summary']} | {r['channel']} | {r['created']} | {r['status']} |" for r in rows]
     (tdir / "_index.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -181,7 +184,7 @@ def rebuild_root_index(root: Path):
     for t in topics(root):
         n = sum(1 for tt, _ in note_files(root) if tt == t)
         if n:
-            lines.append(f"- [[{t}/_index|{t}]] ({n})")
+            lines.append(f"- [[{t}/_index|{C.display_name(t)}]] ({n})")
     root.mkdir(parents=True, exist_ok=True)
     (root / "_index.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 

@@ -11,10 +11,12 @@ Make notes that let the user understand and revise a topic weeks later without r
 <notes_root>/
   _index.md                                   all topics (auto-generated)
   <Topic>/_index.md                           notes in that topic (auto-generated)
-  <Topic>/<Note Title>/<Note Title>.md        the note
-  <Topic>/<Note Title>/<Note Title> - interactive.html   (only when it earns its place)
-  _sources/<Video Title> - <id>/              transcript package from yt-transcript
+  <Topic>/<Note_Title>/<Note_Title>.md        the note
+  <Topic>/<Note_Title>/<Note_Title>_interactive.html   (only when it earns its place)
+  _sources/<Video_Title>_<id>/                transcript package from yt-transcript
 ```
+
+**Naming rule:** folder and file names use underscores instead of spaces, e.g. `System_Design/Consistent_Hashing/Consistent_Hashing.md`. Pass normal titles with spaces to the scripts; they convert them. Follow the same rule for anything you name yourself (Drive folders, extra files). Titles *inside* notes (headings, frontmatter `title`, wikilink labels) keep their spaces.
 
 Depth defaults to **deep**. Use quick mode only if the user asks for a summary or quick notes.
 
@@ -55,7 +57,7 @@ Decide, briefly and internally:
 ## Step 5: Create the folder
 
 ```bash
-python3 <skill_dir>/scripts/notes_paths.py prepare --source "<source_dir>" --topic "<Topic>" --title "<Note Title>"
+python3 <skill_dir>/scripts/notes_paths.py prepare --source "<source_dir>" --topic "<Topic>" --title "<Note title>"
 ```
 
 It prints JSON with `note_file`, `interactive_file`, `transcript_wikilink`, `interactive_wikilink`, `interactive_embed_block` and `today`. If a note for this video already exists, it returns that location (`regenerating_existing_note: true`), and you overwrite it there rather than creating a duplicate. Only pass `--new-location` if the user wants a separate copy.
@@ -71,7 +73,7 @@ What makes these notes good:
 - Intuition first, then precise detail; a concrete example for every core concept.
 - Diagrams placed where they explain something, each with a sentence on how to read it.
 - No timestamps, interview questions or flashcards (the user makes those across many notes).
-- `[[Wikilinks]]` to related concepts, which builds the user's Obsidian graph.
+- Wikilinks to related concepts as `[[File_Name|Readable Name]]`, which builds the user's Obsidian graph. Link targets use the underscore file name, since a plain `[[Cache Stampede]]` won't find `Cache_Stampede.md`.
 
 Write the note to `note_file`. If you build an interactive walkthrough, copy `assets/interactive-template.html` to `interactive_file`, fill it in, and link it in the note as described in `references/interactive-html.md`.
 

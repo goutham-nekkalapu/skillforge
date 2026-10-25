@@ -157,13 +157,24 @@ _BAD_CHARS = re.compile(r'[\\/:*?"<>|#^\[\]{}\x00-\x1f]')
 
 
 def safe_name(text: str, max_len: int = 80) -> str:
-    """Filesystem- and Obsidian-wikilink-safe name that stays human readable."""
+    """Filesystem- and Obsidian-wikilink-safe name that stays human readable.
+
+    Words are separated by underscores, never spaces:
+    "Consistent Hashing - Explained!" -> "Consistent_Hashing_Explained!"
+    """
     text = _BAD_CHARS.sub(" ", text or "")
-    text = re.sub(r"\s+", " ", text).strip(" .-_")
+    text = re.sub(r"\s+[-–—]+\s+", " ", text)   # " - " separators become a single break
+    text = re.sub(r"[\s_]+", "_", text).strip("._- ")
     if len(text) > max_len:
-        cut = text[:max_len].rsplit(" ", 1)[0]
+        cut = text[:max_len].rsplit("_", 1)[0]
         text = cut if len(cut) > max_len * 0.6 else text[:max_len]
+        text = text.strip("._-")
     return text or "Untitled"
+
+
+def display_name(name: str) -> str:
+    """Folder/file name back to readable text for index pages: "System_Design" -> "System Design"."""
+    return name.replace("_", " ")
 
 
 def fmt_ts(seconds: float | int | None) -> str:

@@ -1,6 +1,6 @@
 ---
 title: "Consistent Hashing"
-aliases: ["Consistent Hashing Explained (TEST FIXTURE - not a real video)"]
+aliases: ["Consistent Hashing", "Consistent Hashing Explained (TEST FIXTURE - not a real video)"]
 summary: "Place servers and keys on a hash ring so adding or removing a server moves only ~1/N of keys; virtual nodes keep load even."
 topic: "System Design"
 tags: [system-design, distributed-systems, hashing, caching, load-balancing]
@@ -11,7 +11,7 @@ video_id: "TEST0000001"
 channel: "Test Channel"
 published: "2026-01-15"
 duration: "09:00"
-transcript: "[[transcript - TEST0000001|Full transcript]]"
+transcript: "[[transcript_TEST0000001|Full transcript]]"
 transcript_method: "test-fixture (manual)"
 created: "2026-10-24"
 ---
@@ -95,7 +95,7 @@ flowchart LR
 
 **Result:** on average only **1/N of keys move**, compared with nearly all of them under mod N.
 
-[[Consistent Hashing - interactive.html|▶ Open the interactive walkthrough]] (step through keys moving when server E joins)
+[[Consistent_Hashing_interactive.html|▶ Open the interactive walkthrough]] (step through keys moving when server E joins)
 
 ```mermaid
 flowchart LR
@@ -170,10 +170,10 @@ flowchart LR
 
 ## Related
 
-- [[Caching]] · [[Cache Stampede]] · [[Sharding]] · [[Load Balancing]] · [[Dynamo]] · [[Cassandra]]
+- [[Caching]] · [[Cache_Stampede|Cache Stampede]] · [[Sharding]] · [[Load_Balancing|Load Balancing]] · [[Dynamo]] · [[Cassandra]]
 - Original paper (from the video description): https://www.cs.princeton.edu/courses/archive/fall09/cos518/papers/chash.pdf
 
 ## Source
 
 - Video: [Consistent Hashing Explained (TEST FIXTURE - not a real video)](https://www.youtube.com/watch?v=TEST0000001) · Test Channel · 2026-01-15 · 9:00
-- [[transcript - TEST0000001|Full transcript]] · test fixture, manual captions
+- [[transcript_TEST0000001|Full transcript]] · test fixture, manual captions
