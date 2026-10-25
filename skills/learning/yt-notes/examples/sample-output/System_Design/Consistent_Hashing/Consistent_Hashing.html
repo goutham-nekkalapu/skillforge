@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consistent hashing</title>
+<style>
+  :root {
+    --bg: #f6f6f3; --surface: #ffffff; --ink: #16181d; --muted: #5f636b; --line: #dfdcd5;
+    --soft: #eceae4; --accent: #2b59c3; --accent-soft: #e4ebfa;
+    --blue: #2b59c3; --orange: #c46a1b; --teal: #23807a; --purple: #7b3fa0; --red: #c0392b; --green: #2e8b57;
+    --code-bg: #f1efe9; --shadow: 0 1px 2px rgba(0,0,0,.05), 0 6px 20px rgba(0,0,0,.05);
+    --radius: 14px; --maxw: 1080px;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141518; --surface: #1d1f23; --ink: #ecebe7; --muted: #a3a29d; --line: #34363c;
+      --soft: #26282d; --accent: #7fa2ff; --accent-soft: #24304b;
+      --blue: #7fa2ff; --orange: #f0a35e; --teal: #5fc7bf; --purple: #c595ea; --red: #f08273; --green: #6fd19c;
+      --code-bg: #24262b; --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 var(--sans); }
+  a { color: var(--accent); }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 40px 32px 96px; }
+
+  /* Header */
+  .kicker { font: 600 13px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  h1 { font-size: clamp(2.2rem, 4vw, 3.4rem); line-height: 1.08; letter-spacing: -.02em; margin: 0 0 16px; }
+  .lede { font-size: 1.2rem; color: var(--muted); max-width: 62ch; margin: 0 0 18px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 26px; padding: 0; list-style: none; }
+  .meta li { font: 13px/1.2 var(--mono); padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); }
+
+  /* Tabs (anchor links: work as a table of contents without JS) */
+  .tabs { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 0;
+          background: var(--bg); border-bottom: 1px solid var(--line); margin-bottom: 30px; }
+  .tab { font-weight: 700; font-size: 15px; text-decoration: none; color: var(--ink); padding: 10px 18px;
+         border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  .tab:hover { border-color: var(--accent); }
+  .tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .tab:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* Panels: all visible without JS; one at a time with JS */
+  .panel { margin-bottom: 56px; }
+  .js .panel { display: none; }
+  .js .panel.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  h2 { font-size: 1.9rem; letter-spacing: -.01em; margin: 0 0 14px; }
+  h3 { font-size: 1.3rem; margin: 34px 0 10px; }
+  p, li { max-width: 72ch; }
+  .minitoc { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; }
+  .minitoc a { font-size: 13px; text-decoration: none; padding: 4px 10px; border-radius: 999px; background: var(--soft); color: var(--ink); }
+
+  /* TL;DR */
+  .tldr { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 24px; box-shadow: var(--shadow); }
+  .tldr h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 6px; }
+  .tldr ul { margin: 0; padding-left: 1.2em; }
+  .tldr li { margin: 6px 0; }
+
+  /* Cards */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 18px 0; }
+  .card { --c: var(--accent); background: var(--surface); border: 1px solid var(--line); border-top: 5px solid var(--c);
+          border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .card-head { padding: 14px 18px 10px; border-bottom: 1px solid var(--line); }
+  .card-head strong { display: block; font-size: 1.15rem; }
+  .card-head span { color: var(--muted); font-size: 14px; }
+  .card-body { padding: 12px 18px 16px; font-size: 15.5px; }
+  .card-body p { margin: 0 0 10px; }
+  .pill { display: inline-block; font: 13px/1.2 var(--mono); color: var(--c, var(--accent)); border: 1.5px solid currentColor;
+          border-radius: 999px; padding: 3px 10px; }
+
+  /* Callouts */
+  .callout { border-left: 5px solid var(--accent); background: var(--accent-soft); border-radius: 0 12px 12px 0; padding: 14px 20px; margin: 20px 0; }
+  .callout.warn { border-color: var(--orange); background: color-mix(in srgb, var(--orange) 14%, var(--surface)); }
+  .callout.added { border-color: var(--purple); background: color-mix(in srgb, var(--purple) 12%, var(--surface)); }
+  .callout .label { display: block; font: 700 12px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .callout p { margin: 0; }
+
+  /* Figure: a framed illustration with a caption and an Expand button */
+  .figure { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 40px 22px 22px; margin: 20px 0; box-shadow: var(--shadow); position: relative; }
+  .figure figcaption, .figure .caption { color: var(--muted); font-size: 14.5px; margin-top: 14px; }
+  .expand { position: absolute; top: 10px; right: 10px; font: 600 12px var(--sans); padding: 5px 10px; border-radius: 8px;
+            border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; z-index: 2; }
+  .lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(10,10,12,.72); display: none; align-items: center; justify-content: center; padding: 3vw; }
+  .lightbox.open { display: flex; }
+  .lightbox .inner { background: var(--surface); border-radius: var(--radius); padding: 28px; width: min(96vw, 1400px); max-height: 94vh; overflow: auto; }
+  .lightbox .close { float: right; }
+  .lightbox .figure-body { zoom: 1.35; }
+
+  /* Node: the basic box used by flow, graph and scenes */
+  .node { --c: var(--line); display: inline-block; min-width: 110px; padding: 11px 16px; border: 1.5px solid var(--c); border-radius: 12px;
+          background: var(--surface); text-align: center; font-weight: 650; font-size: 15.5px; line-height: 1.3; transition: all .3s ease; }
+  .node[class*="c-"] { background: color-mix(in srgb, var(--c) 10%, var(--surface)); }
+  .node small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .hl { box-shadow: 0 0 0 3px var(--accent); }
+  .node.hl { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+
+  /* Flow: nodes joined by arrows; add "vertical" for top-to-bottom.
+     The arrow's line is its background, ::after the head, ::before the label;
+     "moving" adds a dot travelling along the line. */
+  .flow { display: flex; align-items: center; flex-wrap: wrap; row-gap: 14px; justify-content: center; }
+  .arrow { --lc: var(--muted); position: relative; flex: 1 1 48px; min-width: 48px; max-width: 160px; height: 14px; margin: 0 12px 0 4px;
+           background: linear-gradient(var(--lc), var(--lc)) 0 50% / 100% 2px no-repeat; }
+  .arrow::after { content: ""; position: absolute; right: -9px; top: 1px; border: 6px solid transparent; border-left: 9px solid var(--lc); border-right: 0; }
+  .arrow[data-label]::before { content: attr(data-label); position: absolute; left: 50%; bottom: 13px; transform: translateX(-50%);
+                               font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+  .arrow.hl { --lc: var(--accent); box-shadow: none; }
+  .arrow.moving { --lc: var(--accent);
+                  background: radial-gradient(circle, var(--accent) 5px, transparent 6px) 0 50% / 12px 12px no-repeat,
+                              linear-gradient(var(--lc), var(--lc)) 0 50% / 100% 2px no-repeat;
+                  animation: travel 1.6s linear infinite; }
+  @keyframes travel { from { background-position: 0% 50%, 0 50%; } to { background-position: 100% 50%, 0 50%; } }
+  .flow.vertical { flex-direction: column; flex-wrap: nowrap; }
+  .flow.vertical .arrow { flex: 0 0 34px; width: 14px; height: 34px; min-width: 0; margin: 4px 0 12px;
+                          background: linear-gradient(var(--lc), var(--lc)) 50% 0 / 2px 100% no-repeat; }
+  .flow.vertical .arrow::after { right: auto; left: 1px; top: auto; bottom: -9px; border: 6px solid transparent; border-top: 9px solid var(--lc); border-bottom: 0; }
+  .flow.vertical .arrow[data-label]::before { left: 22px; bottom: 50%; transform: translateY(50%); }
+  .flow.vertical .arrow.moving { background: radial-gradient(circle, var(--accent) 5px, transparent 6px) 50% 0 / 12px 12px no-repeat,
+                                             linear-gradient(var(--lc), var(--lc)) 50% 0 / 2px 100% no-repeat;
+                                 animation-name: travel-down; }
+  @keyframes travel-down { from { background-position: 50% 0%, 50% 0; } to { background-position: 50% 100%, 50% 0; } }
+
+  /* Stack: layered bands (architecture, layers, priorities) */
+  .stack { display: grid; gap: 8px; margin: 10px 0; }
+  .layer { --c: var(--accent); display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 14px; align-items: center; padding: 12px 16px;
+           border: 1px solid var(--line); border-left: 6px solid var(--c); border-radius: 10px; background: var(--surface); transition: all .3s ease; }
+  .layer > b { font-size: 15.5px; }
+  .layer > span { color: var(--muted); font-size: 15px; }
+  .layer.hl { background: var(--accent-soft); border-color: var(--accent); box-shadow: none; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips > span { font-size: 13px; padding: 3px 9px; border-radius: 999px; background: var(--soft); color: var(--ink); }
+
+  /* Lanes: rows with a label and a run of items */
+  .lanes { display: grid; gap: 10px; margin: 10px 0; }
+  .lane { --c: var(--accent); display: grid; grid-template-columns: 150px 1fr; gap: 12px; align-items: center; }
+  .lane > b { font-size: 14.5px; color: var(--c); }
+  .lane > .items { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border-radius: 10px; background: color-mix(in srgb, var(--c) 8%, var(--surface)); border: 1px dashed color-mix(in srgb, var(--c) 45%, var(--line)); }
+  .lane > .items > span { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: 14px; }
+
+  /* Timeline */
+  .timeline { list-style: none; padding: 0 0 0 26px; margin: 14px 0; border-left: 2px solid var(--line); }
+  .timeline li { position: relative; margin: 0 0 16px; padding-left: 8px; }
+  .timeline li::before { content: ""; position: absolute; left: -37px; top: 6px; width: 14px; height: 14px; border-radius: 50%;
+                         background: var(--surface); border: 3px solid var(--c, var(--accent)); }
+  .timeline li > b { display: block; font-size: 14px; color: var(--muted); font-family: var(--mono); }
+
+  /* Bars: horizontal values, widths from --v */
+  .bars { display: grid; gap: 12px; margin: 8px 0; }
+  .bar { --c: var(--accent); display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 14px; align-items: center; }
+  .bar > b { font-size: 15px; }
+  .bar > .track { position: relative; height: 34px; border-radius: 8px; background: var(--soft); overflow: hidden; }
+  .bar > .track > i { position: absolute; inset: 0 auto 0 0; width: var(--v, 50%); background: var(--c); border-radius: 8px; opacity: .9; transition: width .6s ease; }
+  .bar > .track > span { position: relative; z-index: 1; display: block; line-height: 34px; padding: 0 12px; font-size: 14px; font-weight: 600; }
+  .bar.hl > .track { box-shadow: 0 0 0 3px var(--accent); }
+
+  /* Tree: nested lists with connectors */
+  .tree, .tree ul { list-style: none; margin: 0; padding-left: 22px; }
+  .tree { padding-left: 0; }
+  .tree li { position: relative; padding: 4px 0 4px 18px; }
+  .tree ul li::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; border-left: 2px solid var(--line); }
+  .tree ul li:last-child::before { bottom: auto; height: 18px; }
+  .tree ul li::after { content: ""; position: absolute; left: 0; top: 18px; width: 14px; border-top: 2px solid var(--line); }
+  .tree .node { min-width: 0; padding: 5px 12px; font-size: 14.5px; }
+
+  /* Circle: items placed around a circle by angle (--a). "ring" draws the circle;
+     "cycle" draws it dashed; --seg paints coloured segments; .arc highlights a span. */
+  .circle { --size: 300px; --pad: 26px; --w: 10px; position: relative; width: var(--size); max-width: 100%; aspect-ratio: 1; margin: 6px auto; }
+  .circle.ring::before, .circle.cycle::before { content: ""; position: absolute; inset: var(--pad); border-radius: 50%; border: var(--w) solid var(--line); }
+  .circle.cycle::before { border-width: 2px; border-style: dashed; inset: calc(var(--pad) + var(--w) / 2 - 1px); }
+  .circle.ring[style*="--seg"]::before { border: none; background: var(--seg);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--w)), #000 calc(100% - var(--w) + 1px));
+              mask: radial-gradient(farthest-side, transparent calc(100% - var(--w)), #000 calc(100% - var(--w) + 1px)); }
+  .circle > .arc { position: absolute; inset: var(--pad); border-radius: 50%;
+      background: conic-gradient(from var(--from), var(--c, var(--accent)) 0 calc(var(--to) - var(--from)), transparent 0);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--w)), #000 calc(100% - var(--w) + 1px));
+              mask: radial-gradient(farthest-side, transparent calc(100% - var(--w)), #000 calc(100% - var(--w) + 1px)); }
+  .circle > .group { position: absolute; inset: 0; }
+  .circle > .arc.moving { animation: pulse 1s ease-in-out infinite alternate; }
+  @keyframes pulse { from { opacity: .45; } to { opacity: 1; } }
+  .on-circle { position: absolute; left: 50%; top: 50%; z-index: 1;
+      transform: translate(-50%, -50%) rotate(var(--a)) translateY(calc(var(--size) / -2 + var(--pad) + var(--w) / 2 - var(--out, 0px))) rotate(calc(-1 * var(--a))); }
+  .circle .center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 30%; color: var(--muted); font-size: 14px; }
+  .badge { --c: var(--accent); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--c);
+           color: #fff; font-weight: 700; font-size: 15px; box-shadow: 0 0 0 3px var(--surface); transition: all .3s ease; }
+  .badge.hl { box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--accent); }
+  .pin { --c: var(--muted); display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--surface); }
+  .pin.ring-out { box-shadow: 0 0 0 2px var(--surface), 0 0 0 5px var(--red); }
+  .pin.hl { box-shadow: 0 0 0 2px var(--surface), 0 0 0 5px var(--accent); }
+  .tag-label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+  /* Row: illustrations side by side, each with an optional caption */
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; align-items: start; }
+  .row > div > .caption, .row > div > b { display: block; text-align: center; }
+  .row > div > b { margin-top: 6px; }
+  .row > div > .caption { margin-top: 2px; }
+
+  /* Graph: HTML nodes placed by --x/--y (percent of the box, node centre);
+     arrows are drawn at load time from the <i class="link"> elements. */
+  .graph { position: relative; height: var(--h, 300px); margin: 8px 0; }
+  .graph > .node { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); transform: translate(-50%, -50%); white-space: nowrap; z-index: 1; }
+  .graph > .link { display: none; }
+  .graph > svg.links { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .graph path { fill: none; stroke: var(--muted); stroke-width: 2; transition: stroke .3s ease; }
+  .graph path.hl { stroke: var(--accent); stroke-width: 3; }
+  .graph path.moving { stroke: var(--accent); stroke-dasharray: 8 7; animation: dash 1s linear infinite; }
+  .graph text { font: 12.5px var(--sans); fill: var(--muted); paint-order: stroke; stroke: var(--surface); stroke-width: 5px; text-anchor: middle; dominant-baseline: middle; }
+  @keyframes dash { to { stroke-dashoffset: -30; } }
+
+  /* Stepper: a .scene of components + <ol class="steps">; JS adds controls.
+     Elements with class "el" are hidden until a step lists them in data-show. */
+  .stepper .el { opacity: 0; transition: opacity .35s ease; }
+  .stepper .el.on, html:not(.js) .stepper .el { opacity: 1; }
+  .stepper .dim { opacity: .28; }
+  .steps { margin: 12px 0 0; }
+  .js .stepper .steps { display: none; }
+  .step-caption { min-height: 64px; margin-top: 14px; }
+  .controls { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .controls button, .toggle button { font: 600 14px var(--sans); padding: 7px 14px; border-radius: 9px; border: 1px solid var(--line);
+                                      background: var(--surface); color: var(--ink); cursor: pointer; }
+  .controls button:hover, .toggle button:hover { border-color: var(--accent); }
+  .controls button:disabled { opacity: .4; cursor: default; }
+  .controls .count { margin-left: auto; color: var(--muted); font: 13px var(--mono); }
+
+  /* Compare: two or more panes; JS turns them into a toggle */
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
+  .compare-pane h4 { margin: 0 0 10px; }
+  .js .compare { display: block; }
+  .js .compare-pane { display: none; }
+  .js .compare-pane.active { display: block; }
+  .toggle { display: inline-flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+  .toggle button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  /* Multi-video notes: source tags, coverage grid, sources list */
+  .vtag { display: inline-block; font: 700 11.5px/1 var(--mono); padding: 4px 7px; border-radius: 6px; margin-left: 6px;
+          vertical-align: 2px; color: #fff; background: var(--c, var(--muted)); }
+  .vtag.v1 { --c: var(--blue); } .vtag.v2 { --c: var(--orange); } .vtag.v3 { --c: var(--teal); }
+  .vtag.v4 { --c: var(--purple); } .vtag.v5 { --c: var(--green); }
+  .coverage td, .coverage th { text-align: center; }
+  .coverage td:first-child, .coverage th:first-child { text-align: left; }
+  .coverage td.full::before, .coverage td.part::before, .dot { content: ""; display: inline-block; width: 14px; height: 14px;
+                                                                 border-radius: 50%; border: 2px solid var(--accent); vertical-align: -2px; }
+  .coverage td.full::before, .dot.full { background: var(--accent); }
+  .coverage td.part::before, .dot.part { background: linear-gradient(90deg, var(--accent) 50%, transparent 50%); }
+  .coverage td.none::before { content: "–"; color: var(--muted); }
+  .cov-legend { font-size: 14px; color: var(--muted); display: flex; gap: 16px; flex-wrap: wrap; margin: -6px 0 18px; }
+  .sources-list { display: grid; gap: 10px; padding: 0; list-style: none; }
+  .sources-list li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
+
+  /* Tables, code, takeaways */
+  table { border-collapse: collapse; width: 100%; margin: 18px 0; background: var(--surface); border-radius: 12px; overflow: hidden; font-size: 15.5px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 10px 14px; text-align: left; vertical-align: top; }
+  th { background: var(--soft); font-size: 14px; }
+  code { font: 0.9em var(--mono); background: var(--code-bg); padding: 1px 6px; border-radius: 6px; }
+  pre { background: var(--code-bg); padding: 16px 18px; border-radius: 12px; overflow: auto; font-size: 14px; line-height: 1.5; }
+  pre code { background: none; padding: 0; }
+  .takeaways { list-style: none; padding: 0; counter-reset: k; }
+  .takeaways li { counter-increment: k; position: relative; padding: 12px 16px 12px 52px; margin: 10px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  .takeaways li::before { content: counter(k); position: absolute; left: 14px; top: 11px; width: 26px; height: 26px; border-radius: 50%;
+                          background: var(--accent); color: var(--surface); font: 700 14px/26px var(--sans); text-align: center; }
+
+  /* Floating nav buttons (anchors, so they work without JS) */
+  .fab { position: fixed; right: 22px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
+         background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--ink); text-decoration: none;
+         z-index: 30; font-size: 20px; line-height: 1; }
+  .fab:hover { border-color: var(--accent); color: var(--accent); }
+  .fab.home { bottom: 78px; }
+  .fab.top { bottom: 24px; }
+  footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); margin-top: 40px; padding-top: 14px; }
+
+  @media (prefers-color-scheme: dark) { .badge { color: var(--bg); } }
+  /* Colour classes come last so they override each component's default colour */
+  .c-blue { --c: var(--blue); } .c-orange { --c: var(--orange); } .c-teal { --c: var(--teal); }
+  .c-purple { --c: var(--purple); } .c-red { --c: var(--red); } .c-green { --c: var(--green); }
+</style>
+</head>
+<body>
+<div class="wrap" id="page-top">
+  <header>
+    <p class="kicker">System Design · Test Channel</p>
+    <h1>Consistent hashing</h1>
+    <p class="lede">How to spread keys across servers so that adding or removing a server moves only a small share of them, instead of reshuffling almost everything.</p>
+    <ul class="meta">
+      <li>video: <a href="https://www.youtube.com/watch?v=TEST0000001">youtube.com/watch?v=TEST0000001</a></li>
+      <li>9:00</li>
+      <li>published 2026-01-15</li>
+      <li>transcript: test fixture (not a real video)</li>
+    </ul>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <a class="tab" href="#overview" role="tab">Overview</a>
+    <a class="tab" href="#key-ideas" role="tab">Key ideas</a>
+    <a class="tab" href="#walkthrough" role="tab">Walkthrough</a>
+    <a class="tab" href="#compare" role="tab">Compare</a>
+    <a class="tab" href="#takeaways" role="tab">Takeaways</a>
+    <a class="tab" href="#source" role="tab">Source</a>
+  </nav>
+
+  <main>
+    <section class="panel" id="overview" role="tabpanel">
+      <div class="tldr">
+        <h2>TL;DR</h2>
+        <ul>
+          <li>With <code>hash(key) mod N</code>, changing the number of servers moves almost every key: <strong>~80%</strong> going from 4 to 5.</li>
+          <li>Consistent hashing puts servers and keys on a <strong>ring</strong>; a key belongs to the <strong>first server clockwise</strong>.</li>
+          <li>Adding or removing a server moves only one arc's keys: about <strong>1/N</strong>.</li>
+          <li><strong>Virtual nodes</strong> (100–200 positions per server) keep the load even.</li>
+        </ul>
+      </div>
+      <h2 style="margin-top:32px">The big picture</h2>
+      <p>In a cache cluster, a sudden reshuffle of keys means a flood of cache misses hitting the database. Consistent hashing removes the link between where a key lives and how many servers exist.</p>
+      <div class="cards">
+        <div class="card c-red"><div class="card-head"><strong>The problem</strong><span>hash mod N</span></div>
+          <div class="card-body"><p>Placement depends on N, so any change to N remaps most keys.</p><span class="pill">~80% move</span></div></div>
+        <div class="card c-teal"><div class="card-head"><strong>The ring</strong><span>next server clockwise</span></div>
+          <div class="card-body"><p>Placement depends on position on a circle, not on N.</p><span class="pill">~1/N move</span></div></div>
+        <div class="card c-purple"><div class="card-head"><strong>Virtual nodes</strong><span>many points per server</span></div>
+          <div class="card-body"><p>Many small arcs instead of a few big ones: even load, gentle rebalancing.</p><span class="pill">100–200 each</span></div></div>
+      </div>
+      <div class="callout"><span class="label">Key insight</span>
+        <p>Place keys by <em>where they sit on the ring</em>, not by <em>how many servers there are</em>. Then a change only affects the neighbourhood where it happens.</p></div>
+    </section>
+
+    <section class="panel" id="key-ideas" role="tabpanel">
+      <h2>Key ideas</h2>
+      <h3 id="mod-n">Why hash mod N breaks</h3>
+      <p>Changing N from 4 to 5 gives a different answer for most keys. A key keeps its server only when <code>h mod 4 == h mod 5</code>.</p>
+      <figure class="figure">
+        <div class="figure-body bars">
+          <div class="bar c-red" style="--v:80%"><b>hash(key) mod N</b><div class="track"><i></i><span style="color:#fff">~80% of keys move</span></div></div>
+          <div class="bar c-teal" style="--v:20%"><b>Hash ring</b><div class="track"><i></i><span>~20% move: only the new server's share (1/N)</span></div></div>
+        </div>
+        <figcaption>Share of keys that change server when the cluster grows from 4 to 5 servers.</figcaption></figure>
+      <div class="callout added"><span class="label">Added context (not from the video)</span>
+        <p>Why 80%: among any 20 consecutive hash values, <code>h mod 4 == h mod 5</code> holds for just 4 of them, so about 20% stay.</p></div>
+
+      <h3 id="ring">The hash ring</h3>
+      <p>Bend the hash range (0 to 2³²) into a circle. Hash each server's name to place it, hash each key the same way, and give each key to the <strong>first server clockwise</strong>.</p>
+      <figure class="figure">
+        <div class="figure-body circle ring" style="--size:330px">
+          <div class="arc" style="--from:125deg;--to:200deg"></div>
+          <span class="on-circle" style="--a:50deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:80deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:125deg"><i class="pin c-teal hl"></i></span><span class="on-circle" style="--a:140deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:170deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:185deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:230deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:260deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:320deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:350deg"><i class="pin c-orange"></i></span>
+          <span class="on-circle" style="--a:20deg"><b class="badge c-orange">A</b></span><span class="on-circle" style="--a:110deg"><b class="badge c-blue">B</b></span><span class="on-circle" style="--a:200deg"><b class="badge c-teal">C</b></span><span class="on-circle" style="--a:290deg"><b class="badge c-purple">D</b></span>
+          <span class="on-circle" style="--a:0deg;--out:26px"><span class="tag-label">0 = 2³²</span></span>
+          <span class="on-circle" style="--a:125deg;--out:40px"><span class="tag-label" style="color:var(--accent);font-weight:600">this key</span></span>
+          <div class="center">clockwise ↻<br>keys take the colour of their server</div>
+        </div>
+        <figcaption>The highlighted key walks clockwise and lands on server C.</figcaption></figure>
+
+      <h3 id="add-remove">Adding or removing a server</h3>
+      <p>When server E joins between B and C, only the keys between B and E change owner. Removing a server is the mirror image: its keys go to the next server clockwise.</p>
+      <div class="compare">
+        <div class="compare-pane" data-label="Before: A–D"><h4>Before: four servers</h4><div class="circle ring" style="--size:280px"><span class="on-circle" style="--a:50deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:80deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:125deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:140deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:170deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:185deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:230deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:260deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:320deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:350deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:20deg"><b class="badge c-orange">A</b></span><span class="on-circle" style="--a:110deg"><b class="badge c-blue">B</b></span><span class="on-circle" style="--a:200deg"><b class="badge c-teal">C</b></span><span class="on-circle" style="--a:290deg"><b class="badge c-purple">D</b></span></div></div>
+        <div class="compare-pane" data-label="After: E joins"><h4>After: E joins (moved keys circled)</h4><div class="circle ring" style="--size:280px"><span class="on-circle" style="--a:50deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:80deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:125deg"><i class="pin c-red ring-out"></i></span><span class="on-circle" style="--a:140deg"><i class="pin c-red ring-out"></i></span><span class="on-circle" style="--a:170deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:185deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:230deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:260deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:320deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:350deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:20deg"><b class="badge c-orange">A</b></span><span class="on-circle" style="--a:110deg"><b class="badge c-blue">B</b></span><span class="on-circle" style="--a:200deg"><b class="badge c-teal">C</b></span><span class="on-circle" style="--a:290deg"><b class="badge c-purple">D</b></span><span class="on-circle" style="--a:150deg"><b class="badge c-red">E</b></span></div></div>
+      </div>
+
+      <h3 id="vnodes">Virtual nodes</h3>
+      <p>With few servers, positions land unevenly and one server can own a huge arc. Hashing each server many times (typically 100–200) spreads it into many small arcs, so load evens out, a leaving server's keys spread over many neighbours, and bigger machines can simply get more virtual nodes.</p>
+      <figure class="figure">
+        <div class="figure-body row">
+          <div><div class="circle ring" style="--size:250px;--w:16px;--seg:conic-gradient(var(--orange) 0deg 40deg, var(--blue) 40deg 70deg, var(--teal) 70deg 100deg, var(--orange) 100deg 360deg)">
+            <span class="on-circle" style="--a:40deg"><b class="badge c-orange">A</b></span><span class="on-circle" style="--a:70deg"><b class="badge c-blue">B</b></span><span class="on-circle" style="--a:100deg"><b class="badge c-teal">C</b></span><div class="center">A owns ~300°</div></div>
+            <b>Without virtual nodes</b><span class="caption">one server owns most of the ring</span></div>
+          <div><div class="circle ring" style="--size:250px;--w:16px;--seg:conic-gradient(var(--orange) 0deg 7deg, var(--blue) 7deg 27deg, var(--teal) 27deg 47deg, var(--orange) 47deg 67deg, var(--blue) 67deg 87deg, var(--teal) 87deg 107deg, var(--orange) 107deg 127deg, var(--blue) 127deg 147deg, var(--teal) 147deg 167deg, var(--orange) 167deg 187deg, var(--blue) 187deg 207deg, var(--teal) 207deg 227deg, var(--orange) 227deg 247deg, var(--blue) 247deg 267deg, var(--teal) 267deg 287deg, var(--orange) 287deg 307deg, var(--blue) 307deg 327deg, var(--teal) 327deg 347deg, var(--orange) 347deg 360deg)">
+            <div class="center">each ≈ ⅓</div></div>
+            <b>With virtual nodes</b><span class="caption">each server ≈ ⅓, in small pieces</span></div>
+        </div>
+        <figcaption>Same three servers: uneven arcs on the left; many small, balanced arcs on the right.</figcaption></figure>
+    </section>
+
+    <section class="panel" id="walkthrough" role="tabpanel">
+      <h2>Walkthrough: server E joins</h2>
+      <p>Step through what happens to ten keys when a fifth server joins.</p>
+      <div class="figure stepper">
+        <div class="scene circle ring" style="--size:330px">
+          <div class="arc el" id="st-walk" style="--from:125deg;--to:200deg"></div>
+          <div class="group el" id="st-keys-before"><span class="on-circle" style="--a:50deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:80deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:125deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:140deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:170deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:185deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:230deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:260deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:320deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:350deg"><i class="pin c-orange"></i></span></div>
+          <div class="group el" id="st-keys-after"><span class="on-circle" style="--a:50deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:80deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:125deg"><i class="pin c-red ring-out"></i></span><span class="on-circle" style="--a:140deg"><i class="pin c-red ring-out"></i></span><span class="on-circle" style="--a:170deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:185deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:230deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:260deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:320deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:350deg"><i class="pin c-orange"></i></span></div>
+          <span class="on-circle" style="--a:20deg"><b class="badge c-orange" id="st-A">A</b></span><span class="on-circle" style="--a:110deg"><b class="badge c-blue" id="st-B">B</b></span><span class="on-circle" style="--a:200deg"><b class="badge c-teal" id="st-C">C</b></span><span class="on-circle" style="--a:290deg"><b class="badge c-purple" id="st-D">D</b></span>
+          <span class="on-circle el" id="st-E" style="--a:150deg"><b class="badge c-red" id="st-Eb">E</b></span>
+          <div class="center"><span class="el" id="st-modn">mod N would move ~8 of 10</span></div>
+        </div>
+        <ol class="steps">
+          <li data-show="st-keys-before"><strong>1 · Four servers</strong> Each key takes the colour of the first server clockwise from it.</li>
+          <li data-show="st-keys-before st-walk" data-hl="st-C" data-move="st-walk"><strong>2 · A lookup</strong> This key walks clockwise and meets C first, so C owns it.</li>
+          <li data-show="st-keys-before st-E" data-hl="st-Eb"><strong>3 · E joins</strong> E hashes to a point between B and C. Keys elsewhere still meet the same server first.</li>
+          <li data-show="st-keys-after st-E" data-hl="st-Eb"><strong>4 · Only two keys move</strong> Keys between B and E now meet E before C (circled). 2 of 10 keys moved: about 1/N.</li>
+          <li data-show="st-keys-after st-E st-modn"><strong>5 · Compared with mod N</strong> The same change with hash mod N would have moved about 8 of the 10 keys.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="panel" id="compare" role="tabpanel">
+      <h2>Compare</h2>
+      <table>
+        <tr><th></th><th>hash mod N</th><th>Ring</th><th>Ring + virtual nodes</th></tr>
+        <tr><th>Keys moved when N changes</th><td>almost all</td><td>~1/N (one arc)</td><td>~1/N, taken from every server</td></tr>
+        <tr><th>Load balance</th><td>even</td><td>can be very uneven</td><td>even</td></tr>
+        <tr><th>A removed server's keys go to</th><td>everyone (full reshuffle)</td><td>one neighbour</td><td>many servers</td></tr>
+        <tr><th>Weighted servers</th><td>no</td><td>no</td><td>yes (more virtual nodes)</td></tr>
+        <tr><th>Choose when</th><td>N never changes</td><td>rarely: prefer virtual nodes</td><td>clusters that grow, shrink or fail</td></tr>
+      </table>
+    </section>
+
+    <section class="panel" id="takeaways" role="tabpanel">
+      <h2>Takeaways</h2>
+      <ol class="takeaways">
+        <li>Placement should depend on position on the ring, not on the number of servers.</li>
+        <li>"Next server clockwise" is the whole lookup rule.</li>
+        <li>A membership change costs about 1/N of keys, compared with almost all for mod N.</li>
+        <li>Virtual nodes give balance, gentle failure and weighting.</li>
+        <li><strong>Pitfall:</strong> a ring without virtual nodes isn't balanced, and removing a server dumps all its keys on one neighbour.</li>
+      </ol>
+    </section>
+
+    <section class="panel" id="source" role="tabpanel">
+      <h2>Source</h2>
+      <table>
+        <tr><th>Video</th><td><a href="https://www.youtube.com/watch?v=TEST0000001">Consistent Hashing Explained (TEST FIXTURE - not a real video)</a></td></tr>
+        <tr><th>Channel</th><td>Test Channel</td></tr>
+        <tr><th>Published</th><td>2026-01-15 · 9:00</td></tr>
+        <tr><th>Transcript</th><td>test fixture, manual captions</td></tr>
+        <tr><th>Mentioned in the video</th><td>Amazon Dynamo, Cassandra, CDNs and load balancers use consistent hashing with virtual nodes</td></tr>
+        <tr><th>From the description</th><td>Paper: cs.princeton.edu/courses/archive/fall09/cos518/papers/chash.pdf</td></tr>
+      </table>
+    </section>
+  </main>
+
+  <footer>Generated by yt-notes · 2026-10-25 · sample built from a short test transcript, not a real video</footer>
+</div>
+
+<!-- Floating navigation: home = first tab, top = top of page. Anchors, so they work without JS. -->
+<a class="fab home" href="#overview" aria-label="Home (first tab)" title="Home">⌂</a>
+<a class="fab top" href="#page-top" aria-label="Back to top" title="Back to top">↑</a>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Expanded figure">
+  <div class="inner"><button type="button" class="close" id="lightbox-close">Close ✕</button><div id="lightbox-body"></div></div>
+</div>
+
+<script>
+/* ---- note engine (keep as is) ---------------------------------------------
+   Everything is attached with addEventListener because Obsidian's HTML Viewer
+   strips inline handlers. Tabs follow the URL hash, so #key-ideas deep-links. */
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  root.classList.add("js");
+  var $$ = function (sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); };
+  var tabs = $$(".tab"), panels = $$(".panel");
+  var firstId = panels.length ? panels[0].id : "";
+  var SVGNS = "http://www.w3.org/2000/svg", graphCount = 0;
+
+  /* Graph: draw arrows between HTML nodes. Paths are created once and reused,
+     so a stepper can keep classes (hl, moving) on them across redraws. */
+  function drawGraph(g) {
+    if (!g.offsetWidth) return;
+    var svg = g.querySelector(":scope > svg.links");
+    if (!svg) {
+      svg = document.createElementNS(SVGNS, "svg"); svg.setAttribute("class", "links"); svg.setAttribute("aria-hidden", "true");
+      var mid = "ga" + (++graphCount);
+      svg.innerHTML = '<defs><marker id="' + mid + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">' +
+        '<path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted);stroke:none"/></marker></defs>';
+      svg.dataset.marker = mid;
+      g.insertBefore(svg, g.firstChild);
+    }
+    var box = g.getBoundingClientRect();
+    function find(id) { return g.querySelector('[id="' + id + '"], [data-gid="' + id + '"]'); }
+    function rect(el) { var r = el.getBoundingClientRect(); return { x: r.left - box.left + r.width / 2, y: r.top - box.top + r.height / 2, w: r.width / 2 + 6, h: r.height / 2 + 6 }; }
+    function edge(r, dx, dy) { var s = Math.min(r.w / Math.abs(dx || 1e-9), r.h / Math.abs(dy || 1e-9)); return { x: r.x + dx * s, y: r.y + dy * s }; }
+    $$(":scope > .link", g).forEach(function (l) {
+      var a = find(l.dataset.from), b = find(l.dataset.to);
+      if (!a || !b) return;
+      if (!l._path) {
+        l._path = document.createElementNS(SVGNS, "path");
+        l._path.setAttribute("marker-end", "url(#" + svg.dataset.marker + ")");
+        if (l.id) { l._path.id = l.id; l.dataset.gid = l.id; l.removeAttribute("id"); }
+        (l.getAttribute("class") || "").split(/\s+/).forEach(function (c) { if (c && c !== "link") l._path.classList.add(c); });
+        svg.appendChild(l._path);
+        if (l.dataset.label) { l._text = document.createElementNS(SVGNS, "text"); l._text.textContent = l.dataset.label; svg.appendChild(l._text); }
+      }
+      var ra = rect(a), rb = rect(b), curve = parseFloat(l.dataset.curve || "0");
+      var dx = rb.x - ra.x, dy = rb.y - ra.y, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+      var cx = (ra.x + rb.x) / 2 + nx * curve * 2, cy = (ra.y + rb.y) / 2 + ny * curve * 2;
+      var p1 = edge(ra, cx - ra.x, cy - ra.y), p2 = edge(rb, cx - rb.x, cy - rb.y);
+      l._path.setAttribute("d", curve ? "M" + p1.x + "," + p1.y + " Q" + cx + "," + cy + " " + p2.x + "," + p2.y : "M" + p1.x + "," + p1.y + " L" + p2.x + "," + p2.y);
+      if (l._text) {
+        var tx = curve ? (p1.x + 2 * cx + p2.x) / 4 : (p1.x + p2.x) / 2, ty = curve ? (p1.y + 2 * cy + p2.y) / 4 : (p1.y + p2.y) / 2;
+        var off = curve ? (curve > 0 ? 14 : -14) : 0;
+        l._text.setAttribute("x", tx + nx * off); l._text.setAttribute("y", ty + ny * off - (curve ? 0 : 10));
+      }
+    });
+  }
+  function drawGraphs(scope) { $$(".graph", scope).forEach(drawGraph); }
+
+  function panelFor(id) {
+    if (!id) return null;
+    var el = document.getElementById(id);
+    if (!el) return null;
+    return el.classList.contains("panel") ? el : el.closest(".panel");
+  }
+  function show(id, scrollTarget) {
+    var panel = panelFor(id) || panelFor(firstId);
+    if (!panel) return;
+    panels.forEach(function (p) { p.classList.toggle("active", p === panel); });
+    tabs.forEach(function (t) {
+      var on = t.getAttribute("href") === "#" + panel.id;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.setAttribute("tabindex", on ? "0" : "-1");
+    });
+    drawGraphs(panel);
+    if (scrollTarget && scrollTarget !== panel) scrollTarget.scrollIntoView();
+    else if (scrollTarget === null) window.scrollTo(0, 0);
+  }
+  function fromHash() {
+    var id = decodeURIComponent((location.hash || "").slice(1));
+    if (id === "page-top") return;
+    var el = id ? document.getElementById(id) : null;
+    show(id || firstId, el && !el.classList.contains("panel") ? el : undefined);
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener("click", function (e) {
+      e.preventDefault();
+      var id = t.getAttribute("href").slice(1);
+      history.replaceState(null, "", "#" + id);
+      show(id);
+    });
+    t.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      e.preventDefault();
+      var next = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+      next.focus(); next.click();
+    });
+  });
+  window.addEventListener("hashchange", fromHash);
+  var resizeTimer;
+  window.addEventListener("resize", function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(function () { drawGraphs(document); }, 120); });
+
+  // Home: first tab and top of page. Top: top of page.
+  var home = document.querySelector(".fab.home");
+  if (home) home.addEventListener("click", function (e) { e.preventDefault(); history.replaceState(null, "", "#" + firstId); show(firstId, null); });
+  var top = document.querySelector(".fab.top");
+  if (top) top.addEventListener("click", function (e) { e.preventDefault(); window.scrollTo(0, 0); });
+
+  // Mini table of contents for panels with 3+ subheadings.
+  panels.forEach(function (p) {
+    var hs = p.querySelectorAll("h3[id]");
+    if (hs.length < 3) return;
+    var nav = document.createElement("nav");
+    nav.className = "minitoc"; nav.setAttribute("aria-label", "In this section");
+    Array.prototype.forEach.call(hs, function (h) {
+      var a = document.createElement("a");
+      a.href = "#" + h.id; a.textContent = h.textContent;
+      a.addEventListener("click", function (e) { e.preventDefault(); h.scrollIntoView(); });
+      nav.appendChild(a);
+    });
+    var h2 = p.querySelector("h2");
+    if (h2) h2.insertAdjacentElement("afterend", nav); else p.insertBefore(nav, p.firstChild);
+  });
+
+  // Expandable figures (lightbox).
+  var lb = document.getElementById("lightbox"), lbBody = document.getElementById("lightbox-body");
+  function closeLb() { lb.classList.remove("open"); lbBody.innerHTML = ""; }
+  $$(".figure").forEach(function (fig) {
+    if (fig.classList.contains("stepper")) return;
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "expand"; b.textContent = "Expand";
+    b.addEventListener("click", function () {
+      var clone = fig.cloneNode(true);
+      $$("button.expand, svg.links", clone).forEach(function (n) { n.remove(); });
+      $$("[id]", clone).forEach(function (n) { n.dataset.gid = n.id; n.removeAttribute("id"); });
+      clone.classList.remove("figure"); clone.style.cssText = "";
+      lbBody.appendChild(clone); lb.classList.add("open");
+      drawGraphs(clone);
+    });
+    fig.appendChild(b);
+  });
+  if (lb) {
+    document.getElementById("lightbox-close").addEventListener("click", closeLb);
+    lb.addEventListener("click", function (e) { if (e.target === lb) closeLb(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeLb(); });
+  }
+
+  // Compare panes -> toggle.
+  $$(".compare").forEach(function (cmp) {
+    var panes = cmp.querySelectorAll(":scope > .compare-pane");
+    if (panes.length < 2) return;
+    var bar = document.createElement("div"); bar.className = "toggle"; bar.setAttribute("role", "group");
+    var buttons = [];
+    Array.prototype.forEach.call(panes, function (pane, i) {
+      var b = document.createElement("button"); b.type = "button";
+      b.textContent = pane.getAttribute("data-label") || ("Option " + (i + 1));
+      b.addEventListener("click", function () {
+        Array.prototype.forEach.call(panes, function (q, j) { q.classList.toggle("active", i === j); });
+        buttons.forEach(function (x, j) { x.setAttribute("aria-pressed", i === j ? "true" : "false"); });
+        drawGraphs(cmp);
+      });
+      buttons.push(b); bar.appendChild(b);
+    });
+    cmp.insertBefore(bar, cmp.firstChild);
+    buttons[0].click();
+  });
+
+  // Steppers: work on any elements inside .scene (nodes, arrows, badges, pins, graph links).
+  $$(".stepper").forEach(function (st) {
+    var steps = $$(":scope > .steps > li", st);
+    var scene = st.querySelector(".scene") || st;
+    if (!steps.length) return;
+    drawGraphs(st);
+    var cap = document.createElement("div"); cap.className = "step-caption"; cap.setAttribute("aria-live", "polite");
+    var bar = document.createElement("div"); bar.className = "controls";
+    function mk(label, aria) { var b = document.createElement("button"); b.type = "button"; b.textContent = label; b.setAttribute("aria-label", aria); bar.appendChild(b); return b; }
+    var prev = mk("◀ Prev", "Previous step"), play = mk("▶ Play", "Play or pause"), next = mk("Next ▶", "Next step"), reset = mk("↺", "Restart");
+    var count = document.createElement("span"); count.className = "count"; bar.appendChild(count);
+    st.appendChild(cap); st.appendChild(bar);
+    var i = 0, timer = null;
+    function ids(li, attr) { return (li.getAttribute(attr) || "").split(/\s+/).filter(Boolean); }
+    function byId(id) { return scene.querySelector('[id="' + id + '"]'); }
+    function setClass(list, cls) {
+      $$("." + cls, scene).forEach(function (n) { n.classList.remove(cls); });
+      list.forEach(function (id) { var n = byId(id); if (n) n.classList.add(cls); });
+    }
+    function go(k) {
+      drawGraphs(st);
+      i = Math.max(0, Math.min(steps.length - 1, k));
+      var li = steps[i], showSet = ids(li, "data-show");
+      $$(".el", scene).forEach(function (n) { n.classList.toggle("on", showSet.indexOf(n.id) >= 0); });
+      setClass(ids(li, "data-hl"), "hl"); setClass(ids(li, "data-move"), "moving"); setClass(ids(li, "data-dim"), "dim");
+      cap.innerHTML = li.innerHTML;
+      prev.disabled = i === 0; next.disabled = i === steps.length - 1;
+      count.textContent = (i + 1) + " / " + steps.length;
+    }
+    function stop() { if (timer) { clearInterval(timer); timer = null; play.textContent = "▶ Play"; } }
+    prev.addEventListener("click", function () { stop(); go(i - 1); });
+    next.addEventListener("click", function () { stop(); go(i + 1); });
+    reset.addEventListener("click", function () { stop(); go(0); });
+    play.addEventListener("click", function () {
+      if (timer) return stop();
+      if (i === steps.length - 1) go(0);
+      play.textContent = "❚❚ Pause";
+      timer = setInterval(function () { if (i >= steps.length - 1) stop(); else go(i + 1); }, 2600);
+    });
+    go(0);
+  });
+
+  fromHash();
+  drawGraphs(document);
+})();
+</script>
+</body>
+</html>

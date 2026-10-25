@@ -1,6 +1,6 @@
 ---
 name: yt-notes
-description: Turn a YouTube video into deep, visual study notes saved to the user's notes folder (Obsidian-ready markdown with Mermaid diagrams, worked examples, comparison tables, and an optional interactive HTML walkthrough), organised by topic so they can be revisited for learning and interview prep. Uses the yt-transcript skill to get the transcript, description and chapters first. Use this whenever the user shares a YouTube link and asks for notes, study notes, a write-up, a breakdown, a summary to keep, "notes I can refer to later", or wants to "learn this video", even if they don't say "notes" explicitly. Also use it to regenerate or improve notes for a video already processed. For transcript files or screenshots the user already has (e.g. from a course platform) with no YouTube link, use lecture-distiller instead.
+description: Turn a YouTube video, or up to 5 videos on one topic combined, into distilled, highly visual study notes saved by topic in the user's notes folder for learning and interview prep. By default each note is a single-page HTML file with tabs, HTML illustrations (flows, graphs, rings, layers, charts) and step-through animations, plus a small markdown card for Obsidian search; markdown with HTML snippets on request. Uses the yt-transcript skill to get transcripts, descriptions and chapters first. Use this whenever the user shares YouTube links and asks for notes, study notes, a write-up, a breakdown, a summary to keep, "notes I can refer to later", or wants to "learn this video", even without saying "notes". Also use it to combine several videos into one note, add a video to an existing note, or regenerate notes. For transcript files or screenshots the user already has (e.g. from a course platform) with no YouTube link, use lecture-distiller instead.
 ---
 
 # yt-notes
@@ -11,14 +11,19 @@ Make notes that let the user understand and revise a topic weeks later without r
 <notes_root>/
   _index.md                                   all topics (auto-generated)
   <Topic>/_index.md                           notes in that topic (auto-generated)
-  <Topic>/<Note_Title>/<Note_Title>.md        the note
-  <Topic>/<Note_Title>/<Note_Title>_interactive.html   (only when it earns its place)
+  <Topic>/<Note_Title>/<Note_Title>.html      the note (HTML format, the default)
+  <Topic>/<Note_Title>/<Note_Title>.md        card for Obsidian search/tags/links (HTML format),
+                                              or the note itself (markdown format)
   _sources/<Video_Title>_<id>/                transcript package from yt-transcript
 ```
 
-**Naming rule:** folder and file names use underscores instead of spaces, e.g. `System_Design/Consistent_Hashing/Consistent_Hashing.md`. Pass normal titles with spaces to the scripts; they convert them. Follow the same rule for anything you name yourself (Drive folders, extra files). Titles *inside* notes (headings, frontmatter `title`, wikilink labels) keep their spaces.
+**Naming rule:** folder and file names use underscores instead of spaces, e.g. `System_Design/Consistent_Hashing/Consistent_Hashing.html`. Pass normal titles with spaces to the scripts; they convert them. Follow the same rule for anything you name yourself (Drive folders, extra files). Titles *inside* notes (headings, frontmatter `title`, wikilink labels) keep their spaces.
 
-Depth defaults to **deep**. Use quick mode only if the user asks for a summary or quick notes.
+**Format:** `note_format` in the settings, `html` by default. The user can override it per request ("as markdown", "as HTML"), and you pass that to `prepare` with `--format`.
+
+**Distilled, not exhaustive:** keep the ideas that matter, explained well and shown visually; leave out repetition, side stories and minor details. There's no length limit. Length comes from how much important material the video has, not from covering everything said.
+
+**One video or several:** given several links on the same topic, make **one combined note** (up to `max_videos`, default 5). The steps below apply to both; the extra work for combined notes is in "Combining several videos" further down. Videos on unrelated topics get separate notes.
 
 ## Step 1: Tell the user where notes will be saved (every time)
 
@@ -43,7 +48,7 @@ If the transcript can't be obtained, stop and explain why. Never write notes fro
 ## Step 3: Read everything before writing
 
 - Read `meta.json` (title, channel, description, links, chapters, transcript method and kind).
-- Read the **whole** transcript markdown. For long videos (over ~15k words), read it in parts, chapter by chapter, and keep a running outline of concepts, examples, numbers and claims as you go. Depth comes from the details: the specific numbers, examples, caveats and comparisons the speaker gives.
+- Read the **whole** transcript markdown. For long videos (over ~15k words), read it in parts, chapter by chapter, and keep a running outline of the ideas, examples, numbers and claims as you go. You read everything so you can choose well, not so that everything goes into the note.
 - Note the transcript kind. For `auto`, `ai-generated` and similar, expect misheard jargon and fix it from context.
 
 ## Step 4: Plan
@@ -51,8 +56,9 @@ If the transcript can't be obtained, stop and explain why. Never write notes fro
 Decide, briefly and internally:
 - **Note title**: the concept, not the clickbait (e.g. "Consistent Hashing", not "You NEED to know this!!"). Keep the original video title as an alias.
 - **Topic**: a broad, reusable folder name in Title Case ("System Design", "Machine Learning", "Python"). **Reuse an existing topic** from the list whenever one fits, so notes on the same subject stay together. Use `Parent/Child` only for big topics.
-- The core concepts, the mechanisms worth a diagram (see `references/visuals.md`), the worked examples, and the comparisons.
-- Whether an interactive walkthrough is worth building (see `references/interactive-html.md`). Usually it isn't, unless something changes step by step.
+- **What stays**: distil your outline as described in `references/note-structure.md` (keep, compress or leave out each item). Usually 3–7 key ideas.
+- **The visual for each idea** (see `references/visuals.md`): an HTML illustration (flow, graph, circle, stack, bars, cards...), a compare toggle or a step-through animation. Never hand-draw SVG. Prefer a picture to a paragraph whenever it explains faster.
+- **Tabs** (HTML) or sections (markdown): Overview, Key ideas, plus Walkthrough / Compare only when the video has them, then Takeaways and Source.
 
 ## Step 5: Create the folder
 
@@ -60,30 +66,34 @@ Decide, briefly and internally:
 python3 <skill_dir>/scripts/notes_paths.py prepare --source "<source_dir>" --topic "<Topic>" --title "<Note title>"
 ```
 
-It prints JSON with `note_file`, `interactive_file`, `transcript_wikilink`, `interactive_wikilink`, `interactive_embed_block` and `today`. If a note for this video already exists, it returns that location (`regenerating_existing_note: true`), and you overwrite it there rather than creating a duplicate. Only pass `--new-location` if the user wants a separate copy.
+Add `--format markdown` (or `html`) when the user asked for a specific format. It prints JSON with `format`, `note_file` (the `.html` page, or the `.md` note in markdown format), `card_file` (HTML format), `page_wikilink`, `page_embed_block`, `transcript_wikilink`, `drive_dir`, `drive_files` and `today`. If a note for this video already exists, it returns that location (`regenerating_existing_note: true`), and you overwrite it there rather than creating a duplicate. Only pass `--new-location` if the user wants a separate copy.
 
 In a cloud sandbox the user's earlier notes are on Drive, not on this disk, so first search Drive for `fullText contains '<video_id>' and title contains '.md'` (following `nextPageToken`). If a note for this video exists, reuse its topic and title in `prepare`, so the regenerated note replaces it instead of landing in a second folder.
 
 ## Step 6: Write the note
 
-Follow `references/note-structure.md` (read it now): frontmatter, TL;DR, Why this matters, Big picture, Core concepts, How it works, Worked examples, Comparisons, Pitfalls, Takeaways, Glossary, Related, Source. Use `references/visuals.md` for diagrams and Obsidian-safe Mermaid syntax.
+Read `references/note-structure.md` (what goes in) and `references/visuals.md` (how to draw it) now.
+
+**HTML format (default):**
+1. Read `references/html-notes.md`, copy `assets/note-template.html` to `note_file`, and build the page from its components: tabs, TL;DR, cards, illustration components in figures, stepper, compare, takeaways. Write illustrations as short HTML with the component classes; don't add CSS for them or draw SVG. Delete the template's `data-example` blocks.
+2. Write the markdown card to `card_file`: frontmatter, the `page_wikilink`, the TL;DR, related links and the source (format in `note-structure.md`).
+
+**Markdown format:** write the note to `note_file` with `##` sections and small HTML snippets as visuals (rules in `visuals.md`; no SVG drawings, no Mermaid unless the user asks).
 
 What makes these notes good:
-- Faithful to the video, with anything you add marked in `> [!info] Added context` or `> [!warning] Correction` callouts.
-- Intuition first, then precise detail; a concrete example for every core concept.
-- Diagrams placed where they explain something, each with a sentence on how to read it.
+- Distilled: the important ideas only, each explained clearly and pictured where a picture helps.
+- Faithful to the video, with anything you add marked as "Added context" or "Correction".
+- Intuition first, then the precise point.
 - No timestamps, interview questions or flashcards (the user makes those across many notes).
-- Wikilinks to related concepts as `[[File_Name|Readable Name]]`, which builds the user's Obsidian graph. Link targets use the underscore file name, since a plain `[[Cache Stampede]]` won't find `Cache_Stampede.md`.
-
-Write the note to `note_file`. If you build an interactive walkthrough, copy `assets/interactive-template.html` to `interactive_file`, fill it in, and link it in the note as described in `references/interactive-html.md`.
+- Links to related notes as `[[File_Name|Readable Name]]`, in the card or markdown note (links can't work inside the HTML page).
 
 ## Step 7: Check it
 
 ```bash
-python3 <skill_dir>/scripts/check_note.py "<note_file>" [--html "<interactive_file>"]
+python3 <skill_dir>/scripts/check_note.py "<note_file>" [--card "<card_file>"]
 ```
 
-Fix every `ERROR` (broken Mermaid, missing frontmatter keys, leftover placeholders, JavaScript errors) and re-run until it says `RESULT: OK`. Warnings about missing optional tools (mmdc, Playwright) are fine; in that case re-read your Mermaid blocks against the rules in `references/visuals.md` yourself.
+Fix every `ERROR` and re-run until it says `RESULT: OK`. Errors include leftover template blocks, inline handlers that HTML Viewer would strip, broken tabs or anchors, graph links or stepper steps pointing at missing ids, JavaScript errors, unbalanced markdown HTML snippets and missing frontmatter keys. Treat a hand-drawn SVG warning as a request to rebuild that figure from components. A warning about Playwright not being installed is fine; then check by reading the page source against `references/html-notes.md` yourself.
 
 ## Step 8: Update the indexes
 
@@ -95,7 +105,7 @@ This rebuilds `<Topic>/_index.md` and the root `_index.md`. In a cloud sandbox, 
 
 ## Step 9: Save to Google Drive (cloud sandbox only)
 
-On claude.ai (web, mobile, desktop chat) the disk is temporary. Use the **gdrive-save** skill to save the note (and the interactive file, if any) to `drive_dir` from the prepare output, with conflict rule `replace` so regenerated notes overwrite the old ones. If yt-transcript didn't already save the source package to Drive, include `meta.json` and the transcript markdown at `<drive_root>/_sources/<folder>/`.
+On claude.ai (web, mobile, desktop chat) the disk is temporary. Use the **gdrive-save** skill to save the files in `drive_files` (the HTML page and its card, or the markdown note) to `drive_dir` from the prepare output, with conflict rule `replace` so regenerated notes overwrite the old ones. If yt-transcript didn't already save the source package to Drive, include `meta.json` and the transcript markdown at `<drive_root>/_sources/<folder>/`.
 
 If gdrive-save isn't installed, use the Google Drive connector directly: find or create each folder (search by title + `parentId`, following `nextPageToken` to the end), then `create_file` with `textContent`, the right `contentMimeType` (`text/markdown`, `text/html`) and `disableConversionToGoogleType: true`. To replace a file, trash the old one first. Never claim the notes are saved when they only exist in the sandbox.
 
@@ -105,12 +115,35 @@ On the user's own computer, files under `notes_root` are already in place; if `n
 
 Keep it short:
 - Where the note was saved (full path, and the Drive path if uploaded), and whether it replaced an earlier version.
-- One line on what's inside (e.g. "6 concepts, 4 diagrams, 2 worked examples, interactive walkthrough of the ring rebalancing").
+- One line on what's inside (e.g. "5 tabs: 4 key ideas, 5 illustrations, a step-through of the ring rebalancing").
+- For HTML notes, a reminder that the page opens in Obsidian with the HTML Viewer plugin (Scripts ON) or in any browser.
 - Transcript caveats (auto/AI-generated) and any credits spent, plus any warnings from yt-transcript.
 
 ## Other requests
 
 - **"Regenerate / improve the notes for <video>"**: run the steps again. The cached transcript is reused, and the note is overwritten in place.
 - **"Move this note to topic X"**: move the folder on disk, then run `index --all`.
-- **Several videos**: process them one at a time, reusing topics so related notes land together.
-- **Playlist or series**: one note per video in the same topic, each linking to the others with wikilinks.
+- **Several videos on unrelated topics**: separate notes, one at a time, reusing topics so related notes land together.
+- **Playlist or series**: if the user wants one note, combine (up to the limit); otherwise one note per video in the same topic, linked to each other.
+
+## Combining several videos into one note
+
+Use this when the user gives 2–5 videos on the same topic and wants one note. The point is one clear explanation of the topic, drawing on the best of each video, not several summaries glued together.
+
+1. **Check the count.** More than `max_videos` (default 5; `prepare` reports it) is too many for one note. Suggest splitting them by subtopic, or ask which to drop. Very long videos (over ~1 hour) count heavily, so with several of those suggest fewer per note.
+2. **Fetch each video** with yt-transcript, one after another. Cached packages are reused. If a video can't be fetched, carry on with the rest and tell the user which one was skipped and why. Never fill the gap from the title.
+3. **Outline each video on its own**: read its transcript fully and write a compact outline of its ideas, examples, numbers and claims, labelled `V1`, `V2`… in the order given. Merge outlines, not raw transcripts. This keeps each video's content straight.
+4. **Map the overlap.** For each idea, note which videos cover it and how well:
+   - **Shared** (several videos): explain it once, using the clearest explanation or example from any video, and combine complementary details.
+   - **Distinct** (one video): keep it if it passes the distillation test, and tag it with its source.
+   - **Conflicting** (videos disagree, or one is outdated): don't pick silently. Show both views in a "Videos differ" callout, and say which is better supported if the videos make that clear.
+5. **Prepare** with every package: `notes_paths.py prepare --source <dir1> --source <dir2> … --topic … --title …`. The title names the topic, not any one video. The output includes `videos` (each with its `tag`, title, channel, url and `transcript_wikilink`), `single_notes` (existing single-video notes for these videos, to link from the card), and, when the note already exists, `previous_videos` and `added_videos`.
+6. **Write the note** as usual, plus:
+   - **Source tags**: put a `<span class="vtag v2">V2</span>` after a heading or point that comes mainly from one video (in markdown, write `(V2)`). Shared ideas don't need tags.
+   - **A Coverage view** (a tab, or a section in Overview): a grid of the main ideas against the videos (`full` / `part` / `none` cells) so the user can see which video to rewatch for what. Template classes are in `references/html-notes.md`.
+   - **"Videos differ" callouts** wherever they disagree.
+   - **A Sources tab** listing every video with its tag, title, channel, date, duration and transcript kind.
+7. **The card** uses `video_ids` and `video_urls` (inline lists) instead of `video_id` and `video_url`, lists each video's transcript link, and links any `single_notes` as "Also has its own note". Don't replace or delete single-video notes. Format in `references/note-structure.md`.
+8. **On claude.ai**, save every video's source package to Drive (each under `_sources/`), as well as the page and card.
+
+**Adding a video to an existing combined note** ("add this video to my Consistent Hashing note"): fetch it, then `prepare` with all the note's videos plus the new one (`previous_videos` lists them). It finds the existing note, and you regenerate it, merging the new video's content and giving it the next tag.
