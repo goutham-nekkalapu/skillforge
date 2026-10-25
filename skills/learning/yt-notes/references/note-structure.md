@@ -128,6 +128,6 @@ If `prepare` returned a `page_embed_block`, add it under the link to show the pa
 
 ## Markdown format
 
-In markdown format the note itself is the `.md` file: the same frontmatter (with `format: markdown`), then `##` sections for the blocks above, with visuals as inline SVG (see `visuals.md`).
+In markdown format the note itself is the `.md` file: the same frontmatter (with `format: markdown`), then `##` sections for the blocks above, with visuals as small HTML snippets (see `visuals.md`).
 
 **Links between notes**: always `[[File_Name|Readable Name]]`, e.g. `[[Cache_Stampede|Cache Stampede]]`. Note files use underscores, so a plain `[[Cache Stampede]]` won't find `Cache_Stampede.md`. Link targets are the card or markdown note, never the `.html` page.

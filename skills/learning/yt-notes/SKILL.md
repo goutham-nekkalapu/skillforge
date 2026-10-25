@@ -1,6 +1,6 @@
 ---
 name: yt-notes
-description: Turn a YouTube video, or up to 5 videos on one topic combined, into distilled, highly visual study notes saved by topic in the user's notes folder for learning and interview prep. By default each note is a single-page HTML file with tabs, hand-drawn SVG illustrations and animations, plus a small markdown card for Obsidian search; markdown with inline SVG on request. Uses the yt-transcript skill to get transcripts, descriptions and chapters first. Use this whenever the user shares YouTube links and asks for notes, study notes, a write-up, a breakdown, a summary to keep, "notes I can refer to later", or wants to "learn this video", even without saying "notes". Also use it to combine several videos into one note, add a video to an existing note, or regenerate notes. For transcript files or screenshots the user already has (e.g. from a course platform) with no YouTube link, use lecture-distiller instead.
+description: Turn a YouTube video, or up to 5 videos on one topic combined, into distilled, highly visual study notes saved by topic in the user's notes folder for learning and interview prep. By default each note is a single-page HTML file with tabs, HTML illustrations (flows, graphs, rings, layers, charts) and step-through animations, plus a small markdown card for Obsidian search; markdown with HTML snippets on request. Uses the yt-transcript skill to get transcripts, descriptions and chapters first. Use this whenever the user shares YouTube links and asks for notes, study notes, a write-up, a breakdown, a summary to keep, "notes I can refer to later", or wants to "learn this video", even without saying "notes". Also use it to combine several videos into one note, add a video to an existing note, or regenerate notes. For transcript files or screenshots the user already has (e.g. from a course platform) with no YouTube link, use lecture-distiller instead.
 ---
 
 # yt-notes
@@ -57,7 +57,7 @@ Decide, briefly and internally:
 - **Note title**: the concept, not the clickbait (e.g. "Consistent Hashing", not "You NEED to know this!!"). Keep the original video title as an alias.
 - **Topic**: a broad, reusable folder name in Title Case ("System Design", "Machine Learning", "Python"). **Reuse an existing topic** from the list whenever one fits, so notes on the same subject stay together. Use `Parent/Child` only for big topics.
 - **What stays**: distil your outline as described in `references/note-structure.md` (keep, compress or leave out each item). Usually 3–7 key ideas.
-- **The visual for each idea** (see `references/visuals.md`): a hand-drawn SVG figure, cards, a compare toggle or a step-through animation. Prefer a picture to a paragraph whenever it explains faster.
+- **The visual for each idea** (see `references/visuals.md`): an HTML illustration (flow, graph, circle, stack, bars, cards...), a compare toggle or a step-through animation. Never hand-draw SVG. Prefer a picture to a paragraph whenever it explains faster.
 - **Tabs** (HTML) or sections (markdown): Overview, Key ideas, plus Walkthrough / Compare only when the video has them, then Takeaways and Source.
 
 ## Step 5: Create the folder
@@ -75,10 +75,10 @@ In a cloud sandbox the user's earlier notes are on Drive, not on this disk, so f
 Read `references/note-structure.md` (what goes in) and `references/visuals.md` (how to draw it) now.
 
 **HTML format (default):**
-1. Read `references/html-notes.md`, copy `assets/note-template.html` to `note_file`, and build the page from its components: tabs, TL;DR, cards, figures with SVG, stepper, compare, takeaways. Delete the template's `data-example` blocks.
+1. Read `references/html-notes.md`, copy `assets/note-template.html` to `note_file`, and build the page from its components: tabs, TL;DR, cards, illustration components in figures, stepper, compare, takeaways. Write illustrations as short HTML with the component classes; don't add CSS for them or draw SVG. Delete the template's `data-example` blocks.
 2. Write the markdown card to `card_file`: frontmatter, the `page_wikilink`, the TL;DR, related links and the source (format in `note-structure.md`).
 
-**Markdown format:** write the note to `note_file` with `##` sections and inline SVG visuals (rules in `visuals.md`; no Mermaid unless the user asks).
+**Markdown format:** write the note to `note_file` with `##` sections and small HTML snippets as visuals (rules in `visuals.md`; no SVG drawings, no Mermaid unless the user asks).
 
 What makes these notes good:
 - Distilled: the important ideas only, each explained clearly and pictured where a picture helps.
@@ -93,7 +93,7 @@ What makes these notes good:
 python3 <skill_dir>/scripts/check_note.py "<note_file>" [--card "<card_file>"]
 ```
 
-Fix every `ERROR` and re-run until it says `RESULT: OK`. Errors include leftover template blocks, inline handlers that HTML Viewer would strip, broken tabs or anchors, JavaScript errors, invalid SVG and missing frontmatter keys. A warning about Playwright not being installed is fine; then check by reading the page source against `references/html-notes.md` yourself.
+Fix every `ERROR` and re-run until it says `RESULT: OK`. Errors include leftover template blocks, inline handlers that HTML Viewer would strip, broken tabs or anchors, graph links or stepper steps pointing at missing ids, JavaScript errors, unbalanced markdown HTML snippets and missing frontmatter keys. Treat a hand-drawn SVG warning as a request to rebuild that figure from components. A warning about Playwright not being installed is fine; then check by reading the page source against `references/html-notes.md` yourself.
 
 ## Step 8: Update the indexes
 

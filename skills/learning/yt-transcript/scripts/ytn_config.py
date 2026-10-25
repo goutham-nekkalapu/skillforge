@@ -38,7 +38,7 @@ DEFAULTS = {
     "drive_root": "YouTubeNotes",
     # How yt-notes writes notes: "html" (default) = a rich single-page note with
     # tabs, illustrations and animations, plus a small markdown card for
-    # Obsidian search; "markdown" = an Obsidian markdown note with inline SVG.
+    # Obsidian search; "markdown" = an Obsidian markdown note with HTML-snippet illustrations.
     "note_format": "html",
     # Optional: absolute path of the Obsidian vault that contains notes_root.
     # Usually not needed: it is found automatically by looking for a .obsidian

@@ -8,20 +8,24 @@
 <!--
   yt-notes HTML note template.
 
+  Illustrations are built from HTML elements styled by the CSS below (flow,
+  stack, lanes, timeline, circle/ring, bars, tree, graph, cards...). Write short
+  markup with the component classes and let CSS do the layout. Don't hand-draw
+  SVG: it's token-expensive and fragile. The graph component draws its arrows
+  itself at load time from the nodes and links you list.
+
   Works in Obsidian's "HTML Viewer" plugin and any browser:
   - Self-contained: no CDN scripts, fonts or network calls.
-  - No inline event handlers (onclick=…) and no javascript: URLs; HTML Viewer
+  - No inline event handlers (onclick=...) and no javascript: URLs; HTML Viewer
     strips them. All behaviour is attached in the <script> at the bottom.
-  - Navigation stays inside the page (#anchors). The viewer blocks links that
-    leave the page, so there are no links to other notes here; those live in
-    the markdown card next to this file.
-  - Without JavaScript every tab panel is shown one after another and the tab
-    bar works as a table of contents.
+  - Navigation stays inside the page (#anchors); the viewer blocks links that
+    leave the page. Links to other notes live in the markdown card.
+  - Without JavaScript every tab panel is shown in order and the tab bar works
+    as a table of contents.
 
   How to fill it in: replace everything marked REPLACE, delete every block
   marked data-example (the checker fails if any remain), and keep the CSS and
-  engine script as they are. Components are documented in
-  references/html-notes.md.
+  engine script as they are. Components: references/html-notes.md.
 -->
 <style>
   :root {
@@ -43,7 +47,7 @@
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; scroll-padding-top: 84px; }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; } }
   body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 var(--sans); }
   a { color: var(--accent); }
   .wrap { max-width: var(--maxw); margin: 0 auto; padding: 40px 32px 96px; }
@@ -81,7 +85,7 @@
   .tldr ul { margin: 0; padding-left: 1.2em; }
   .tldr li { margin: 6px 0; }
 
-  /* Cards: <div class="card" style="--c: var(--teal)"> */
+  /* Cards */
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 18px 0; }
   .card { --c: var(--accent); background: var(--surface); border: 1px solid var(--line); border-top: 5px solid var(--c);
           border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
@@ -94,49 +98,150 @@
           border-radius: 999px; padding: 3px 10px; }
 
   /* Callouts */
-  .callout { border-left: 5px solid var(--accent); background: var(--accent-soft); border-radius: 0 12px 12px 0;
-             padding: 14px 20px; margin: 20px 0; }
+  .callout { border-left: 5px solid var(--accent); background: var(--accent-soft); border-radius: 0 12px 12px 0; padding: 14px 20px; margin: 20px 0; }
   .callout.warn { border-color: var(--orange); background: color-mix(in srgb, var(--orange) 14%, var(--surface)); }
   .callout.added { border-color: var(--purple); background: color-mix(in srgb, var(--purple) 12%, var(--surface)); }
   .callout .label { display: block; font: 700 12px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
   .callout p { margin: 0; }
 
-  /* Figures: inline SVG illustrations, click "Expand" to zoom */
-  .figure { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin: 20px 0; box-shadow: var(--shadow); position: relative; }
-  .figure svg { width: 100%; height: auto; display: block; }
-  .figure figcaption { color: var(--muted); font-size: 14.5px; margin-top: 10px; }
+  /* Figure: a framed illustration with a caption and an Expand button */
+  .figure { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 40px 22px 22px; margin: 20px 0; box-shadow: var(--shadow); position: relative; }
+  .figure figcaption, .figure .caption { color: var(--muted); font-size: 14.5px; margin-top: 14px; }
   .expand { position: absolute; top: 10px; right: 10px; font: 600 12px var(--sans); padding: 5px 10px; border-radius: 8px;
-            border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+            border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; z-index: 2; }
   .lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(10,10,12,.72); display: none; align-items: center; justify-content: center; padding: 3vw; }
   .lightbox.open { display: flex; }
-  .lightbox .inner { background: var(--surface); border-radius: var(--radius); padding: 24px; width: min(96vw, 1500px); max-height: 94vh; overflow: auto; }
-  .lightbox svg { width: 100%; height: auto; }
+  .lightbox .inner { background: var(--surface); border-radius: var(--radius); padding: 28px; width: min(96vw, 1400px); max-height: 94vh; overflow: auto; }
   .lightbox .close { float: right; }
+  .lightbox .figure-body { zoom: 1.35; }
 
-  /* SVG drawing classes (use inside figures) */
-  .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
-  .box.soft { fill: var(--soft); }
-  .box.hl, .hl .box { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2.5; }
-  .lbl { fill: var(--ink); font: 600 15px var(--sans); text-anchor: middle; dominant-baseline: middle; }
-  .sub { fill: var(--muted); font: 13px var(--sans); text-anchor: middle; dominant-baseline: middle; }
-  .edge { stroke: var(--muted); stroke-width: 2; fill: none; }
-  .edge.hl { stroke: var(--accent); stroke-width: 3; }
-  .flow { stroke-dasharray: 8 7; animation: dash 1s linear infinite; }
+  /* Node: the basic box used by flow, graph and scenes */
+  .node { --c: var(--line); display: inline-block; min-width: 110px; padding: 11px 16px; border: 1.5px solid var(--c); border-radius: 12px;
+          background: var(--surface); text-align: center; font-weight: 650; font-size: 15.5px; line-height: 1.3; transition: all .3s ease; }
+  .node[class*="c-"] { background: color-mix(in srgb, var(--c) 10%, var(--surface)); }
+  .node small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .hl { box-shadow: 0 0 0 3px var(--accent); }
+  .node.hl { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+
+  /* Flow: nodes joined by arrows; add "vertical" for top-to-bottom.
+     The arrow's line is its background, ::after the head, ::before the label;
+     "moving" adds a dot travelling along the line. */
+  .flow { display: flex; align-items: center; flex-wrap: wrap; row-gap: 14px; justify-content: center; }
+  .arrow { --lc: var(--muted); position: relative; flex: 1 1 48px; min-width: 48px; max-width: 160px; height: 14px; margin: 0 12px 0 4px;
+           background: linear-gradient(var(--lc), var(--lc)) 0 50% / 100% 2px no-repeat; }
+  .arrow::after { content: ""; position: absolute; right: -9px; top: 1px; border: 6px solid transparent; border-left: 9px solid var(--lc); border-right: 0; }
+  .arrow[data-label]::before { content: attr(data-label); position: absolute; left: 50%; bottom: 13px; transform: translateX(-50%);
+                               font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+  .arrow.hl { --lc: var(--accent); box-shadow: none; }
+  .arrow.moving { --lc: var(--accent);
+                  background: radial-gradient(circle, var(--accent) 5px, transparent 6px) 0 50% / 12px 12px no-repeat,
+                              linear-gradient(var(--lc), var(--lc)) 0 50% / 100% 2px no-repeat;
+                  animation: travel 1.6s linear infinite; }
+  @keyframes travel { from { background-position: 0% 50%, 0 50%; } to { background-position: 100% 50%, 0 50%; } }
+  .flow.vertical { flex-direction: column; flex-wrap: nowrap; }
+  .flow.vertical .arrow { flex: 0 0 34px; width: 14px; height: 34px; min-width: 0; margin: 4px 0 12px;
+                          background: linear-gradient(var(--lc), var(--lc)) 50% 0 / 2px 100% no-repeat; }
+  .flow.vertical .arrow::after { right: auto; left: 1px; top: auto; bottom: -9px; border: 6px solid transparent; border-top: 9px solid var(--lc); border-bottom: 0; }
+  .flow.vertical .arrow[data-label]::before { left: 22px; bottom: 50%; transform: translateY(50%); }
+  .flow.vertical .arrow.moving { background: radial-gradient(circle, var(--accent) 5px, transparent 6px) 50% 0 / 12px 12px no-repeat,
+                                             linear-gradient(var(--lc), var(--lc)) 50% 0 / 2px 100% no-repeat;
+                                 animation-name: travel-down; }
+  @keyframes travel-down { from { background-position: 50% 0%, 50% 0; } to { background-position: 50% 100%, 50% 0; } }
+
+  /* Stack: layered bands (architecture, layers, priorities) */
+  .stack { display: grid; gap: 8px; margin: 10px 0; }
+  .layer { --c: var(--accent); display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 14px; align-items: center; padding: 12px 16px;
+           border: 1px solid var(--line); border-left: 6px solid var(--c); border-radius: 10px; background: var(--surface); transition: all .3s ease; }
+  .layer > b { font-size: 15.5px; }
+  .layer > span { color: var(--muted); font-size: 15px; }
+  .layer.hl { background: var(--accent-soft); border-color: var(--accent); box-shadow: none; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips > span { font-size: 13px; padding: 3px 9px; border-radius: 999px; background: var(--soft); color: var(--ink); }
+
+  /* Lanes: rows with a label and a run of items */
+  .lanes { display: grid; gap: 10px; margin: 10px 0; }
+  .lane { --c: var(--accent); display: grid; grid-template-columns: 150px 1fr; gap: 12px; align-items: center; }
+  .lane > b { font-size: 14.5px; color: var(--c); }
+  .lane > .items { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border-radius: 10px; background: color-mix(in srgb, var(--c) 8%, var(--surface)); border: 1px dashed color-mix(in srgb, var(--c) 45%, var(--line)); }
+  .lane > .items > span { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: 14px; }
+
+  /* Timeline */
+  .timeline { list-style: none; padding: 0 0 0 26px; margin: 14px 0; border-left: 2px solid var(--line); }
+  .timeline li { position: relative; margin: 0 0 16px; padding-left: 8px; }
+  .timeline li::before { content: ""; position: absolute; left: -37px; top: 6px; width: 14px; height: 14px; border-radius: 50%;
+                         background: var(--surface); border: 3px solid var(--c, var(--accent)); }
+  .timeline li > b { display: block; font-size: 14px; color: var(--muted); font-family: var(--mono); }
+
+  /* Bars: horizontal values, widths from --v */
+  .bars { display: grid; gap: 12px; margin: 8px 0; }
+  .bar { --c: var(--accent); display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 14px; align-items: center; }
+  .bar > b { font-size: 15px; }
+  .bar > .track { position: relative; height: 34px; border-radius: 8px; background: var(--soft); overflow: hidden; }
+  .bar > .track > i { position: absolute; inset: 0 auto 0 0; width: var(--v, 50%); background: var(--c); border-radius: 8px; opacity: .9; transition: width .6s ease; }
+  .bar > .track > span { position: relative; z-index: 1; display: block; line-height: 34px; padding: 0 12px; font-size: 14px; font-weight: 600; }
+  .bar.hl > .track { box-shadow: 0 0 0 3px var(--accent); }
+
+  /* Tree: nested lists with connectors */
+  .tree, .tree ul { list-style: none; margin: 0; padding-left: 22px; }
+  .tree { padding-left: 0; }
+  .tree li { position: relative; padding: 4px 0 4px 18px; }
+  .tree ul li::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; border-left: 2px solid var(--line); }
+  .tree ul li:last-child::before { bottom: auto; height: 18px; }
+  .tree ul li::after { content: ""; position: absolute; left: 0; top: 18px; width: 14px; border-top: 2px solid var(--line); }
+  .tree .node { min-width: 0; padding: 5px 12px; font-size: 14.5px; }
+
+  /* Circle: items placed around a circle by angle (--a). "ring" draws the circle;
+     "cycle" draws it dashed; --seg paints coloured segments; .arc highlights a span. */
+  .circle { --size: 300px; --pad: 26px; --w: 10px; position: relative; width: var(--size); max-width: 100%; aspect-ratio: 1; margin: 6px auto; }
+  .circle.ring::before, .circle.cycle::before { content: ""; position: absolute; inset: var(--pad); border-radius: 50%; border: var(--w) solid var(--line); }
+  .circle.cycle::before { border-width: 2px; border-style: dashed; inset: calc(var(--pad) + var(--w) / 2 - 1px); }
+  .circle.ring[style*="--seg"]::before { border: none; background: var(--seg);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--w)), #000 calc(100% - var(--w) + 1px));
+              mask: radial-gradient(farthest-side, transparent calc(100% - var(--w)), #000 calc(100% - var(--w) + 1px)); }
+  .circle > .arc { position: absolute; inset: var(--pad); border-radius: 50%;
+      background: conic-gradient(from var(--from), var(--c, var(--accent)) 0 calc(var(--to) - var(--from)), transparent 0);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--w)), #000 calc(100% - var(--w) + 1px));
+              mask: radial-gradient(farthest-side, transparent calc(100% - var(--w)), #000 calc(100% - var(--w) + 1px)); }
+  .circle > .group { position: absolute; inset: 0; }
+  .circle > .arc.moving { animation: pulse 1s ease-in-out infinite alternate; }
+  @keyframes pulse { from { opacity: .45; } to { opacity: 1; } }
+  .on-circle { position: absolute; left: 50%; top: 50%; z-index: 1;
+      transform: translate(-50%, -50%) rotate(var(--a)) translateY(calc(var(--size) / -2 + var(--pad) + var(--w) / 2 - var(--out, 0px))) rotate(calc(-1 * var(--a))); }
+  .circle .center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 30%; color: var(--muted); font-size: 14px; }
+  .badge { --c: var(--accent); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--c);
+           color: #fff; font-weight: 700; font-size: 15px; box-shadow: 0 0 0 3px var(--surface); transition: all .3s ease; }
+  .badge.hl { box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--accent); }
+  .pin { --c: var(--muted); display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--surface); }
+  .pin.ring-out { box-shadow: 0 0 0 2px var(--surface), 0 0 0 5px var(--red); }
+  .pin.hl { box-shadow: 0 0 0 2px var(--surface), 0 0 0 5px var(--accent); }
+  .tag-label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+  /* Row: illustrations side by side, each with an optional caption */
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; align-items: start; }
+  .row > div > .caption, .row > div > b { display: block; text-align: center; }
+  .row > div > b { margin-top: 6px; }
+  .row > div > .caption { margin-top: 2px; }
+
+  /* Graph: HTML nodes placed by --x/--y (percent of the box, node centre);
+     arrows are drawn at load time from the <i class="link"> elements. */
+  .graph { position: relative; height: var(--h, 300px); margin: 8px 0; }
+  .graph > .node { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); transform: translate(-50%, -50%); white-space: nowrap; z-index: 1; }
+  .graph > .link { display: none; }
+  .graph > svg.links { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .graph path { fill: none; stroke: var(--muted); stroke-width: 2; transition: stroke .3s ease; }
+  .graph path.hl { stroke: var(--accent); stroke-width: 3; }
+  .graph path.moving { stroke: var(--accent); stroke-dasharray: 8 7; animation: dash 1s linear infinite; }
+  .graph text { font: 12.5px var(--sans); fill: var(--muted); paint-order: stroke; stroke: var(--surface); stroke-width: 5px; text-anchor: middle; dominant-baseline: middle; }
   @keyframes dash { to { stroke-dashoffset: -30; } }
-  .c-blue { --c: var(--blue); } .c-orange { --c: var(--orange); } .c-teal { --c: var(--teal); }
-  .c-purple { --c: var(--purple); } .c-red { --c: var(--red); } .c-green { --c: var(--green); }
-  .fill-c { fill: var(--c); } .stroke-c { stroke: var(--c); }
-  @media (prefers-reduced-motion: reduce) { .flow { animation: none; } }
 
-  /* Stepper: an SVG scene + <ol class="steps">; JS adds controls */
+  /* Stepper: a .scene of components + <ol class="steps">; JS adds controls.
+     Elements with class "el" are hidden until a step lists them in data-show. */
   .stepper .el { opacity: 0; transition: opacity .35s ease; }
-  .stepper .el.on { opacity: 1; }
-  .stepper .dim { opacity: .25; transition: opacity .35s ease; }
-  .no-js .stepper .el, html:not(.js) .stepper .el { opacity: 1; }
+  .stepper .el.on, html:not(.js) .stepper .el { opacity: 1; }
+  .stepper .dim { opacity: .28; }
   .steps { margin: 12px 0 0; }
-  .js .steps { display: none; }
-  .step-caption { min-height: 64px; margin-top: 12px; }
-  .step-caption strong { display: block; }
+  .js .stepper .steps { display: none; }
+  .step-caption { min-height: 64px; margin-top: 14px; }
   .controls { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
   .controls button, .toggle button { font: 600 14px var(--sans); padding: 7px 14px; border-radius: 9px; border: 1px solid var(--line);
                                       background: var(--surface); color: var(--ink); cursor: pointer; }
@@ -144,29 +249,16 @@
   .controls button:disabled { opacity: .4; cursor: default; }
   .controls .count { margin-left: auto; color: var(--muted); font: 13px var(--mono); }
 
-  /* Compare: two panes; JS turns them into a toggle */
-  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
-  .compare-pane h4 { margin: 0 0 8px; }
-  .compare-pane svg { width: 100%; max-width: 520px; height: auto; display: block; margin: 0 auto; }
+  /* Compare: two or more panes; JS turns them into a toggle */
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
+  .compare-pane h4 { margin: 0 0 10px; }
   .js .compare { display: block; }
   .js .compare-pane { display: none; }
   .js .compare-pane.active { display: block; }
-  .toggle { display: inline-flex; gap: 6px; margin-bottom: 10px; }
+  .toggle { display: inline-flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
   .toggle button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 
-  /* Tables, code, lists */
-  table { border-collapse: collapse; width: 100%; margin: 18px 0; background: var(--surface); border-radius: 12px; overflow: hidden; font-size: 15.5px; }
-  th, td { border-bottom: 1px solid var(--line); padding: 10px 14px; text-align: left; vertical-align: top; }
-  th { background: var(--soft); font-size: 14px; }
-  code { font: 0.9em var(--mono); background: var(--code-bg); padding: 1px 6px; border-radius: 6px; }
-  pre { background: var(--code-bg); padding: 16px 18px; border-radius: 12px; overflow: auto; font-size: 14px; line-height: 1.5; }
-  pre code { background: none; padding: 0; }
-  .takeaways { list-style: none; padding: 0; counter-reset: k; }
-  .takeaways li { counter-increment: k; position: relative; padding: 12px 16px 12px 52px; margin: 10px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
-  .takeaways li::before { content: counter(k); position: absolute; left: 14px; top: 11px; width: 26px; height: 26px; border-radius: 50%;
-                          background: var(--accent); color: var(--surface); font: 700 14px/26px var(--sans); text-align: center; }
-
-  /* Multi-video notes: source tags and coverage grid */
+  /* Multi-video notes: source tags, coverage grid, sources list */
   .vtag { display: inline-block; font: 700 11.5px/1 var(--mono); padding: 4px 7px; border-radius: 6px; margin-left: 6px;
           vertical-align: 2px; color: #fff; background: var(--c, var(--muted)); }
   .vtag.v1 { --c: var(--blue); } .vtag.v2 { --c: var(--orange); } .vtag.v3 { --c: var(--teal); }
@@ -182,14 +274,31 @@
   .sources-list { display: grid; gap: 10px; padding: 0; list-style: none; }
   .sources-list li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
 
+  /* Tables, code, takeaways */
+  table { border-collapse: collapse; width: 100%; margin: 18px 0; background: var(--surface); border-radius: 12px; overflow: hidden; font-size: 15.5px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 10px 14px; text-align: left; vertical-align: top; }
+  th { background: var(--soft); font-size: 14px; }
+  code { font: 0.9em var(--mono); background: var(--code-bg); padding: 1px 6px; border-radius: 6px; }
+  pre { background: var(--code-bg); padding: 16px 18px; border-radius: 12px; overflow: auto; font-size: 14px; line-height: 1.5; }
+  pre code { background: none; padding: 0; }
+  .takeaways { list-style: none; padding: 0; counter-reset: k; }
+  .takeaways li { counter-increment: k; position: relative; padding: 12px 16px 12px 52px; margin: 10px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  .takeaways li::before { content: counter(k); position: absolute; left: 14px; top: 11px; width: 26px; height: 26px; border-radius: 50%;
+                          background: var(--accent); color: var(--surface); font: 700 14px/26px var(--sans); text-align: center; }
+
   /* Floating nav buttons (anchors, so they work without JS) */
   .fab { position: fixed; right: 22px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
-         background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--ink); text-decoration: none; z-index: 30; }
+         background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--ink); text-decoration: none;
+         z-index: 30; font-size: 20px; line-height: 1; }
   .fab:hover { border-color: var(--accent); color: var(--accent); }
-  .fab svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .fab.home { bottom: 78px; }
   .fab.top { bottom: 24px; }
   footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); margin-top: 40px; padding-top: 14px; }
+
+  @media (prefers-color-scheme: dark) { .badge { color: var(--bg); } }
+  /* Colour classes come last so they override each component's default colour */
+  .c-blue { --c: var(--blue); } .c-orange { --c: var(--orange); } .c-teal { --c: var(--teal); }
+  .c-purple { --c: var(--purple); } .c-red { --c: var(--red); } .c-green { --c: var(--green); }
 </style>
 </head>
 <body>
@@ -208,7 +317,7 @@
     </ul>
   </header>
 
-  <!-- REPLACE: one tab per panel below, same ids, in the same order. 3–7 tabs. -->
+  <!-- REPLACE: one tab per panel below, same ids, same order. 3–7 tabs. -->
   <nav class="tabs" role="tablist" aria-label="Sections">
     <a class="tab" href="#overview" role="tab">Overview</a>
     <a class="tab" href="#key-ideas" role="tab">Key ideas</a>
@@ -230,22 +339,16 @@
       </div>
 
       <h2 style="margin-top:32px">The big picture</h2>
-      <p>REPLACE: two or three sentences that walk through the overview figure.</p>
+      <p>REPLACE: two or three sentences that walk through the overview illustration.</p>
 
-      <!-- EXAMPLE: cards. Delete or replace (keep the structure). -->
+      <!-- EXAMPLE: cards. Delete or replace. -->
       <div class="cards" data-example>
-        <div class="card c-blue">
-          <div class="card-head"><strong>Part one</strong><span>what it is</span></div>
-          <div class="card-body"><p>Short explanation.</p><span class="pill">a label</span></div>
-        </div>
-        <div class="card c-orange">
-          <div class="card-head"><strong>Part two</strong><span>what it is</span></div>
-          <div class="card-body"><p>Short explanation.</p><span class="pill">a label</span></div>
-        </div>
-        <div class="card c-teal">
-          <div class="card-head"><strong>Part three</strong><span>what it is</span></div>
-          <div class="card-body"><p>Short explanation.</p><span class="pill">a label</span></div>
-        </div>
+        <div class="card c-blue"><div class="card-head"><strong>Part one</strong><span>what it is</span></div>
+          <div class="card-body"><p>Short explanation.</p><span class="pill">a label</span></div></div>
+        <div class="card c-orange"><div class="card-head"><strong>Part two</strong><span>what it is</span></div>
+          <div class="card-body"><p>Short explanation.</p><span class="pill">a label</span></div></div>
+        <div class="card c-teal"><div class="card-head"><strong>Part three</strong><span>what it is</span></div>
+          <div class="card-body"><p>Short explanation.</p><span class="pill">a label</span></div></div>
       </div>
 
       <div class="callout">
@@ -256,28 +359,35 @@
 
     <section class="panel" id="key-ideas" role="tabpanel">
       <h2>Key ideas</h2>
-      <!-- REPLACE: 3–7 ideas, each an h3 + a short explanation + a figure or example where it helps.
-           Panels with 3+ h3s get clickable chips at the top automatically. -->
+      <!-- REPLACE: 3–7 ideas, each an h3 + a short explanation + an illustration or example where it helps. -->
       <h3 id="idea-1">First idea</h3>
       <p>Short explanation: intuition first, then the precise point.</p>
 
-      <!-- EXAMPLE: a figure with an inline SVG. Delete or replace. -->
+      <!-- EXAMPLE: a flow inside a figure. Delete or replace. -->
       <figure class="figure" data-example>
-        <svg viewBox="0 0 800 200" role="img" aria-label="Three boxes connected left to right">
-          <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" style="color:var(--muted)"/></marker></defs>
-          <g><rect class="box" x="20" y="60" width="200" height="80" rx="12"/><text class="lbl" x="120" y="92">Input</text><text class="sub" x="120" y="116">what goes in</text></g>
-          <g class="hl"><rect class="box" x="300" y="60" width="200" height="80" rx="12"/><text class="lbl" x="400" y="92">Process</text><text class="sub" x="400" y="116">the key step</text></g>
-          <g><rect class="box" x="580" y="60" width="200" height="80" rx="12"/><text class="lbl" x="680" y="92">Output</text><text class="sub" x="680" y="116">what comes out</text></g>
-          <path class="edge flow" d="M220,100 L298,100" marker-end="url(#arr)"/>
-          <path class="edge" d="M500,100 L578,100" marker-end="url(#arr)"/>
-        </svg>
+        <div class="figure-body">
+          <div class="flow">
+            <div class="node">Input<small>what goes in</small></div>
+            <div class="arrow moving" data-label="request"></div>
+            <div class="node c-teal">Process<small>the key step</small></div>
+            <div class="arrow"></div>
+            <div class="node">Output<small>what comes out</small></div>
+          </div>
+        </div>
         <figcaption>How to read it: one sentence.</figcaption>
       </figure>
 
       <h3 id="idea-2">Second idea</h3>
       <p>Short explanation.</p>
 
-      <!-- EXAMPLE: compare (before/after or option A/B). Delete or replace. -->
+      <!-- EXAMPLE: bars + compare. Delete or replace. -->
+      <figure class="figure" data-example>
+        <div class="figure-body bars">
+          <div class="bar c-red" style="--v:80%"><b>Option A</b><div class="track"><i></i><span>80%</span></div></div>
+          <div class="bar c-teal" style="--v:20%"><b>Option B</b><div class="track"><i></i><span>20%</span></div></div>
+        </div>
+        <figcaption>One sentence on what the numbers mean.</figcaption>
+      </figure>
       <div class="compare" data-example>
         <div class="compare-pane" data-label="Before"><h4>Before</h4><p>How it works without the idea.</p></div>
         <div class="compare-pane" data-label="After"><h4>After</h4><p>How it works with it.</p></div>
@@ -285,6 +395,20 @@
 
       <h3 id="idea-3">Third idea</h3>
       <p>Short explanation.</p>
+      <!-- EXAMPLE: graph (nodes + links; arrows are drawn automatically). Delete or replace. -->
+      <figure class="figure" data-example>
+        <div class="figure-body graph" style="--h:240px">
+          <div class="node" id="g-plan" style="--x:12;--y:50">Plan</div>
+          <div class="node" id="g-search" style="--x:40;--y:20">Search</div>
+          <div class="node" id="g-read" style="--x:68;--y:50">Read</div>
+          <div class="node c-orange" id="g-check" style="--x:40;--y:82">Critique</div>
+          <i class="link" data-from="g-plan" data-to="g-search"></i>
+          <i class="link" data-from="g-search" data-to="g-read"></i>
+          <i class="link" data-from="g-read" data-to="g-check"></i>
+          <i class="link" data-from="g-check" data-to="g-search" data-label="gaps remain" data-curve="-40"></i>
+        </div>
+        <figcaption>A loop: critique sends the agent back to search until nothing is missing.</figcaption>
+      </figure>
       <div class="callout added">
         <span class="label">Added context (not from the video)</span>
         <p>Use this callout for anything you add beyond what the speaker said.</p>
@@ -293,25 +417,23 @@
 
     <section class="panel" id="walkthrough" role="tabpanel">
       <h2>Walkthrough</h2>
-      <p>REPLACE: one sentence on what the animation shows. Remove this tab if the video has no process worth stepping through.</p>
+      <p>REPLACE: one sentence on what the step-through shows. Remove this tab if the video has no process worth stepping through.</p>
 
-      <!-- EXAMPLE: stepper. The SVG holds every element once; elements with class "el" appear only in
-           the steps that list them in data-show. data-hl highlights, data-flow animates an edge, data-dim fades.
-           Delete or replace. -->
+      <!-- EXAMPLE: stepper. The .scene holds components with ids; "el" elements appear only in the
+           steps that list them in data-show. data-hl highlights, data-move animates an arrow or link,
+           data-dim fades. Delete or replace. -->
       <div class="figure stepper" data-example>
-        <svg viewBox="0 0 800 220" role="img" aria-label="A request moving through three stages">
-          <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" style="color:var(--muted)"/></marker></defs>
-          <g id="s-a"><rect class="box" x="20" y="70" width="180" height="80" rx="12"/><text class="lbl" x="110" y="110">Client</text></g>
-          <g id="s-b"><rect class="box" x="310" y="70" width="180" height="80" rx="12"/><text class="lbl" x="400" y="110">Server</text></g>
-          <g id="s-c"><rect class="box" x="600" y="70" width="180" height="80" rx="12"/><text class="lbl" x="690" y="110">Database</text></g>
-          <path id="e-ab" class="el edge" d="M200,100 L308,100" marker-end="url(#arr2)"/>
-          <path id="e-bc" class="el edge" d="M490,100 L598,100" marker-end="url(#arr2)"/>
-          <path id="e-back" class="el edge" d="M598,125 C500,190 300,190 202,125" marker-end="url(#arr2)"/>
-        </svg>
+        <div class="scene flow">
+          <div class="node" id="s-client">Client</div>
+          <div class="arrow el" id="s-a1" data-label="request"></div>
+          <div class="node" id="s-server">Server</div>
+          <div class="arrow el" id="s-a2" data-label="query"></div>
+          <div class="node" id="s-db">Database</div>
+        </div>
         <ol class="steps">
-          <li data-show="e-ab" data-hl="s-a s-b" data-flow="e-ab"><strong>1 · Request</strong> The client sends a request to the server.</li>
-          <li data-show="e-ab e-bc" data-hl="s-c" data-flow="e-bc" data-dim="s-a"><strong>2 · Lookup</strong> The server asks the database.</li>
-          <li data-show="e-back" data-hl="s-a" data-flow="e-back"><strong>3 · Response</strong> The answer travels back to the client.</li>
+          <li data-show="s-a1" data-hl="s-client" data-move="s-a1"><strong>1 · Request</strong> The client sends a request to the server.</li>
+          <li data-show="s-a1 s-a2" data-hl="s-db" data-move="s-a2" data-dim="s-client"><strong>2 · Lookup</strong> The server asks the database.</li>
+          <li data-show="s-a1 s-a2" data-hl="s-client"><strong>3 · Response</strong> The answer travels back to the client.</li>
         </ol>
       </div>
     </section>
@@ -344,12 +466,8 @@
 </div>
 
 <!-- Floating navigation: home = first tab, top = top of page. Anchors, so they work without JS. -->
-<a class="fab home" href="#overview" aria-label="Home (first tab)" title="Home">
-  <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
-</a>
-<a class="fab top" href="#page-top" aria-label="Back to top" title="Back to top">
-  <svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
-</a>
+<a class="fab home" href="#overview" aria-label="Home (first tab)" title="Home">⌂</a>
+<a class="fab top" href="#page-top" aria-label="Back to top" title="Back to top">↑</a>
 
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Expanded figure">
   <div class="inner"><button type="button" class="close" id="lightbox-close">Close ✕</button><div id="lightbox-body"></div></div>
@@ -363,9 +481,52 @@
   "use strict";
   var root = document.documentElement;
   root.classList.add("js");
-  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
-  var panels = Array.prototype.slice.call(document.querySelectorAll(".panel"));
+  var $$ = function (sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); };
+  var tabs = $$(".tab"), panels = $$(".panel");
   var firstId = panels.length ? panels[0].id : "";
+  var SVGNS = "http://www.w3.org/2000/svg", graphCount = 0;
+
+  /* Graph: draw arrows between HTML nodes. Paths are created once and reused,
+     so a stepper can keep classes (hl, moving) on them across redraws. */
+  function drawGraph(g) {
+    if (!g.offsetWidth) return;
+    var svg = g.querySelector(":scope > svg.links");
+    if (!svg) {
+      svg = document.createElementNS(SVGNS, "svg"); svg.setAttribute("class", "links"); svg.setAttribute("aria-hidden", "true");
+      var mid = "ga" + (++graphCount);
+      svg.innerHTML = '<defs><marker id="' + mid + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">' +
+        '<path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted);stroke:none"/></marker></defs>';
+      svg.dataset.marker = mid;
+      g.insertBefore(svg, g.firstChild);
+    }
+    var box = g.getBoundingClientRect();
+    function find(id) { return g.querySelector('[id="' + id + '"], [data-gid="' + id + '"]'); }
+    function rect(el) { var r = el.getBoundingClientRect(); return { x: r.left - box.left + r.width / 2, y: r.top - box.top + r.height / 2, w: r.width / 2 + 6, h: r.height / 2 + 6 }; }
+    function edge(r, dx, dy) { var s = Math.min(r.w / Math.abs(dx || 1e-9), r.h / Math.abs(dy || 1e-9)); return { x: r.x + dx * s, y: r.y + dy * s }; }
+    $$(":scope > .link", g).forEach(function (l) {
+      var a = find(l.dataset.from), b = find(l.dataset.to);
+      if (!a || !b) return;
+      if (!l._path) {
+        l._path = document.createElementNS(SVGNS, "path");
+        l._path.setAttribute("marker-end", "url(#" + svg.dataset.marker + ")");
+        if (l.id) { l._path.id = l.id; l.dataset.gid = l.id; l.removeAttribute("id"); }
+        (l.getAttribute("class") || "").split(/\s+/).forEach(function (c) { if (c && c !== "link") l._path.classList.add(c); });
+        svg.appendChild(l._path);
+        if (l.dataset.label) { l._text = document.createElementNS(SVGNS, "text"); l._text.textContent = l.dataset.label; svg.appendChild(l._text); }
+      }
+      var ra = rect(a), rb = rect(b), curve = parseFloat(l.dataset.curve || "0");
+      var dx = rb.x - ra.x, dy = rb.y - ra.y, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+      var cx = (ra.x + rb.x) / 2 + nx * curve * 2, cy = (ra.y + rb.y) / 2 + ny * curve * 2;
+      var p1 = edge(ra, cx - ra.x, cy - ra.y), p2 = edge(rb, cx - rb.x, cy - rb.y);
+      l._path.setAttribute("d", curve ? "M" + p1.x + "," + p1.y + " Q" + cx + "," + cy + " " + p2.x + "," + p2.y : "M" + p1.x + "," + p1.y + " L" + p2.x + "," + p2.y);
+      if (l._text) {
+        var tx = curve ? (p1.x + 2 * cx + p2.x) / 4 : (p1.x + p2.x) / 2, ty = curve ? (p1.y + 2 * cy + p2.y) / 4 : (p1.y + p2.y) / 2;
+        var off = curve ? (curve > 0 ? 14 : -14) : 0;
+        l._text.setAttribute("x", tx + nx * off); l._text.setAttribute("y", ty + ny * off - (curve ? 0 : 10));
+      }
+    });
+  }
+  function drawGraphs(scope) { $$(".graph", scope).forEach(drawGraph); }
 
   function panelFor(id) {
     if (!id) return null;
@@ -382,9 +543,9 @@
       t.setAttribute("aria-selected", on ? "true" : "false");
       t.setAttribute("tabindex", on ? "0" : "-1");
     });
-    var target = scrollTarget || null;
-    if (target && target !== panel) { target.scrollIntoView(); }
-    else if (scrollTarget === null) { window.scrollTo(0, 0); }
+    drawGraphs(panel);
+    if (scrollTarget && scrollTarget !== panel) scrollTarget.scrollIntoView();
+    else if (scrollTarget === null) window.scrollTo(0, 0);
   }
   function fromHash() {
     var id = decodeURIComponent((location.hash || "").slice(1));
@@ -407,12 +568,12 @@
     });
   });
   window.addEventListener("hashchange", fromHash);
+  var resizeTimer;
+  window.addEventListener("resize", function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(function () { drawGraphs(document); }, 120); });
 
-  // Home button: first tab and top of page. Top button: top of page.
+  // Home: first tab and top of page. Top: top of page.
   var home = document.querySelector(".fab.home");
-  if (home) home.addEventListener("click", function (e) {
-    e.preventDefault(); history.replaceState(null, "", "#" + firstId); show(firstId, null);
-  });
+  if (home) home.addEventListener("click", function (e) { e.preventDefault(); history.replaceState(null, "", "#" + firstId); show(firstId, null); });
   var top = document.querySelector(".fab.top");
   if (top) top.addEventListener("click", function (e) { e.preventDefault(); window.scrollTo(0, 0); });
 
@@ -421,8 +582,7 @@
     var hs = p.querySelectorAll("h3[id]");
     if (hs.length < 3) return;
     var nav = document.createElement("nav");
-    nav.className = "minitoc";
-    nav.setAttribute("aria-label", "In this section");
+    nav.className = "minitoc"; nav.setAttribute("aria-label", "In this section");
     Array.prototype.forEach.call(hs, function (h) {
       var a = document.createElement("a");
       a.href = "#" + h.id; a.textContent = h.textContent;
@@ -436,15 +596,17 @@
   // Expandable figures (lightbox).
   var lb = document.getElementById("lightbox"), lbBody = document.getElementById("lightbox-body");
   function closeLb() { lb.classList.remove("open"); lbBody.innerHTML = ""; }
-  Array.prototype.forEach.call(document.querySelectorAll(".figure"), function (fig) {
-    var svg = fig.querySelector("svg");
-    if (!svg || fig.classList.contains("stepper")) return;
+  $$(".figure").forEach(function (fig) {
+    if (fig.classList.contains("stepper")) return;
     var b = document.createElement("button");
     b.type = "button"; b.className = "expand"; b.textContent = "Expand";
     b.addEventListener("click", function () {
-      var clone = svg.cloneNode(true);
-      Array.prototype.forEach.call(clone.querySelectorAll("[id]"), function (n) { n.removeAttribute("id"); });
+      var clone = fig.cloneNode(true);
+      $$("button.expand, svg.links", clone).forEach(function (n) { n.remove(); });
+      $$("[id]", clone).forEach(function (n) { n.dataset.gid = n.id; n.removeAttribute("id"); });
+      clone.classList.remove("figure"); clone.style.cssText = "";
       lbBody.appendChild(clone); lb.classList.add("open");
+      drawGraphs(clone);
     });
     fig.appendChild(b);
   });
@@ -455,8 +617,8 @@
   }
 
   // Compare panes -> toggle.
-  Array.prototype.forEach.call(document.querySelectorAll(".compare"), function (cmp) {
-    var panes = cmp.querySelectorAll(".compare-pane");
+  $$(".compare").forEach(function (cmp) {
+    var panes = cmp.querySelectorAll(":scope > .compare-pane");
     if (panes.length < 2) return;
     var bar = document.createElement("div"); bar.className = "toggle"; bar.setAttribute("role", "group");
     var buttons = [];
@@ -466,6 +628,7 @@
       b.addEventListener("click", function () {
         Array.prototype.forEach.call(panes, function (q, j) { q.classList.toggle("active", i === j); });
         buttons.forEach(function (x, j) { x.setAttribute("aria-pressed", i === j ? "true" : "false"); });
+        drawGraphs(cmp);
       });
       buttons.push(b); bar.appendChild(b);
     });
@@ -473,12 +636,12 @@
     buttons[0].click();
   });
 
-  // Steppers.
-  Array.prototype.forEach.call(document.querySelectorAll(".stepper"), function (st) {
-    var steps = Array.prototype.slice.call(st.querySelectorAll(".steps > li"));
+  // Steppers: work on any elements inside .scene (nodes, arrows, badges, pins, graph links).
+  $$(".stepper").forEach(function (st) {
+    var steps = $$(":scope > .steps > li", st);
+    var scene = st.querySelector(".scene") || st;
     if (!steps.length) return;
-    var svg = st.querySelector("svg");
-    var els = svg ? Array.prototype.slice.call(svg.querySelectorAll(".el")) : [];
+    drawGraphs(st);
     var cap = document.createElement("div"); cap.className = "step-caption"; cap.setAttribute("aria-live", "polite");
     var bar = document.createElement("div"); bar.className = "controls";
     function mk(label, aria) { var b = document.createElement("button"); b.type = "button"; b.textContent = label; b.setAttribute("aria-label", aria); bar.appendChild(b); return b; }
@@ -487,15 +650,17 @@
     st.appendChild(cap); st.appendChild(bar);
     var i = 0, timer = null;
     function ids(li, attr) { return (li.getAttribute(attr) || "").split(/\s+/).filter(Boolean); }
+    function byId(id) { return scene.querySelector('[id="' + id + '"]'); }
     function setClass(list, cls) {
-      Array.prototype.forEach.call(svg.querySelectorAll("." + cls), function (n) { n.classList.remove(cls); });
-      list.forEach(function (id) { var n = svg.querySelector("#" + CSS.escape(id)); if (n) n.classList.add(cls); });
+      $$("." + cls, scene).forEach(function (n) { n.classList.remove(cls); });
+      list.forEach(function (id) { var n = byId(id); if (n) n.classList.add(cls); });
     }
     function go(k) {
+      drawGraphs(st);
       i = Math.max(0, Math.min(steps.length - 1, k));
       var li = steps[i], showSet = ids(li, "data-show");
-      els.forEach(function (n) { n.classList.toggle("on", showSet.indexOf(n.id) >= 0); });
-      setClass(ids(li, "data-hl"), "hl"); setClass(ids(li, "data-flow"), "flow"); setClass(ids(li, "data-dim"), "dim");
+      $$(".el", scene).forEach(function (n) { n.classList.toggle("on", showSet.indexOf(n.id) >= 0); });
+      setClass(ids(li, "data-hl"), "hl"); setClass(ids(li, "data-move"), "moving"); setClass(ids(li, "data-dim"), "dim");
       cap.innerHTML = li.innerHTML;
       prev.disabled = i === 0; next.disabled = i === steps.length - 1;
       count.textContent = (i + 1) + " / " + steps.length;
@@ -514,6 +679,7 @@
   });
 
   fromHash();
+  drawGraphs(document);
 })();
 </script>
 </body>

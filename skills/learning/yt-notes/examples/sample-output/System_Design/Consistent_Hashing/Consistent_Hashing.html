@@ -24,7 +24,7 @@
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; scroll-padding-top: 84px; }
-  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *, *::before, *::after { animation: none !important; } }
   body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 var(--sans); }
   a { color: var(--accent); }
   .wrap { max-width: var(--maxw); margin: 0 auto; padding: 40px 32px 96px; }
@@ -62,7 +62,7 @@
   .tldr ul { margin: 0; padding-left: 1.2em; }
   .tldr li { margin: 6px 0; }
 
-  /* Cards: <div class="card" style="--c: var(--teal)"> */
+  /* Cards */
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 18px 0; }
   .card { --c: var(--accent); background: var(--surface); border: 1px solid var(--line); border-top: 5px solid var(--c);
           border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
@@ -75,49 +75,150 @@
           border-radius: 999px; padding: 3px 10px; }
 
   /* Callouts */
-  .callout { border-left: 5px solid var(--accent); background: var(--accent-soft); border-radius: 0 12px 12px 0;
-             padding: 14px 20px; margin: 20px 0; }
+  .callout { border-left: 5px solid var(--accent); background: var(--accent-soft); border-radius: 0 12px 12px 0; padding: 14px 20px; margin: 20px 0; }
   .callout.warn { border-color: var(--orange); background: color-mix(in srgb, var(--orange) 14%, var(--surface)); }
   .callout.added { border-color: var(--purple); background: color-mix(in srgb, var(--purple) 12%, var(--surface)); }
   .callout .label { display: block; font: 700 12px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
   .callout p { margin: 0; }
 
-  /* Figures: inline SVG illustrations, click "Expand" to zoom */
-  .figure { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin: 20px 0; box-shadow: var(--shadow); position: relative; }
-  .figure svg { width: 100%; height: auto; display: block; }
-  .figure figcaption { color: var(--muted); font-size: 14.5px; margin-top: 10px; }
+  /* Figure: a framed illustration with a caption and an Expand button */
+  .figure { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 40px 22px 22px; margin: 20px 0; box-shadow: var(--shadow); position: relative; }
+  .figure figcaption, .figure .caption { color: var(--muted); font-size: 14.5px; margin-top: 14px; }
   .expand { position: absolute; top: 10px; right: 10px; font: 600 12px var(--sans); padding: 5px 10px; border-radius: 8px;
-            border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+            border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; z-index: 2; }
   .lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(10,10,12,.72); display: none; align-items: center; justify-content: center; padding: 3vw; }
   .lightbox.open { display: flex; }
-  .lightbox .inner { background: var(--surface); border-radius: var(--radius); padding: 24px; width: min(96vw, 1500px); max-height: 94vh; overflow: auto; }
-  .lightbox svg { width: 100%; height: auto; }
+  .lightbox .inner { background: var(--surface); border-radius: var(--radius); padding: 28px; width: min(96vw, 1400px); max-height: 94vh; overflow: auto; }
   .lightbox .close { float: right; }
+  .lightbox .figure-body { zoom: 1.35; }
 
-  /* SVG drawing classes (use inside figures) */
-  .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
-  .box.soft { fill: var(--soft); }
-  .box.hl, .hl .box { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2.5; }
-  .lbl { fill: var(--ink); font: 600 15px var(--sans); text-anchor: middle; dominant-baseline: middle; }
-  .sub { fill: var(--muted); font: 13px var(--sans); text-anchor: middle; dominant-baseline: middle; }
-  .edge { stroke: var(--muted); stroke-width: 2; fill: none; }
-  .edge.hl { stroke: var(--accent); stroke-width: 3; }
-  .flow { stroke-dasharray: 8 7; animation: dash 1s linear infinite; }
+  /* Node: the basic box used by flow, graph and scenes */
+  .node { --c: var(--line); display: inline-block; min-width: 110px; padding: 11px 16px; border: 1.5px solid var(--c); border-radius: 12px;
+          background: var(--surface); text-align: center; font-weight: 650; font-size: 15.5px; line-height: 1.3; transition: all .3s ease; }
+  .node[class*="c-"] { background: color-mix(in srgb, var(--c) 10%, var(--surface)); }
+  .node small { display: block; font-weight: 400; color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .hl { box-shadow: 0 0 0 3px var(--accent); }
+  .node.hl { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+
+  /* Flow: nodes joined by arrows; add "vertical" for top-to-bottom.
+     The arrow's line is its background, ::after the head, ::before the label;
+     "moving" adds a dot travelling along the line. */
+  .flow { display: flex; align-items: center; flex-wrap: wrap; row-gap: 14px; justify-content: center; }
+  .arrow { --lc: var(--muted); position: relative; flex: 1 1 48px; min-width: 48px; max-width: 160px; height: 14px; margin: 0 12px 0 4px;
+           background: linear-gradient(var(--lc), var(--lc)) 0 50% / 100% 2px no-repeat; }
+  .arrow::after { content: ""; position: absolute; right: -9px; top: 1px; border: 6px solid transparent; border-left: 9px solid var(--lc); border-right: 0; }
+  .arrow[data-label]::before { content: attr(data-label); position: absolute; left: 50%; bottom: 13px; transform: translateX(-50%);
+                               font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+  .arrow.hl { --lc: var(--accent); box-shadow: none; }
+  .arrow.moving { --lc: var(--accent);
+                  background: radial-gradient(circle, var(--accent) 5px, transparent 6px) 0 50% / 12px 12px no-repeat,
+                              linear-gradient(var(--lc), var(--lc)) 0 50% / 100% 2px no-repeat;
+                  animation: travel 1.6s linear infinite; }
+  @keyframes travel { from { background-position: 0% 50%, 0 50%; } to { background-position: 100% 50%, 0 50%; } }
+  .flow.vertical { flex-direction: column; flex-wrap: nowrap; }
+  .flow.vertical .arrow { flex: 0 0 34px; width: 14px; height: 34px; min-width: 0; margin: 4px 0 12px;
+                          background: linear-gradient(var(--lc), var(--lc)) 50% 0 / 2px 100% no-repeat; }
+  .flow.vertical .arrow::after { right: auto; left: 1px; top: auto; bottom: -9px; border: 6px solid transparent; border-top: 9px solid var(--lc); border-bottom: 0; }
+  .flow.vertical .arrow[data-label]::before { left: 22px; bottom: 50%; transform: translateY(50%); }
+  .flow.vertical .arrow.moving { background: radial-gradient(circle, var(--accent) 5px, transparent 6px) 50% 0 / 12px 12px no-repeat,
+                                             linear-gradient(var(--lc), var(--lc)) 50% 0 / 2px 100% no-repeat;
+                                 animation-name: travel-down; }
+  @keyframes travel-down { from { background-position: 50% 0%, 50% 0; } to { background-position: 50% 100%, 50% 0; } }
+
+  /* Stack: layered bands (architecture, layers, priorities) */
+  .stack { display: grid; gap: 8px; margin: 10px 0; }
+  .layer { --c: var(--accent); display: grid; grid-template-columns: minmax(140px, 220px) 1fr; gap: 14px; align-items: center; padding: 12px 16px;
+           border: 1px solid var(--line); border-left: 6px solid var(--c); border-radius: 10px; background: var(--surface); transition: all .3s ease; }
+  .layer > b { font-size: 15.5px; }
+  .layer > span { color: var(--muted); font-size: 15px; }
+  .layer.hl { background: var(--accent-soft); border-color: var(--accent); box-shadow: none; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips > span { font-size: 13px; padding: 3px 9px; border-radius: 999px; background: var(--soft); color: var(--ink); }
+
+  /* Lanes: rows with a label and a run of items */
+  .lanes { display: grid; gap: 10px; margin: 10px 0; }
+  .lane { --c: var(--accent); display: grid; grid-template-columns: 150px 1fr; gap: 12px; align-items: center; }
+  .lane > b { font-size: 14.5px; color: var(--c); }
+  .lane > .items { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; border-radius: 10px; background: color-mix(in srgb, var(--c) 8%, var(--surface)); border: 1px dashed color-mix(in srgb, var(--c) 45%, var(--line)); }
+  .lane > .items > span { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; font-size: 14px; }
+
+  /* Timeline */
+  .timeline { list-style: none; padding: 0 0 0 26px; margin: 14px 0; border-left: 2px solid var(--line); }
+  .timeline li { position: relative; margin: 0 0 16px; padding-left: 8px; }
+  .timeline li::before { content: ""; position: absolute; left: -37px; top: 6px; width: 14px; height: 14px; border-radius: 50%;
+                         background: var(--surface); border: 3px solid var(--c, var(--accent)); }
+  .timeline li > b { display: block; font-size: 14px; color: var(--muted); font-family: var(--mono); }
+
+  /* Bars: horizontal values, widths from --v */
+  .bars { display: grid; gap: 12px; margin: 8px 0; }
+  .bar { --c: var(--accent); display: grid; grid-template-columns: minmax(120px, 200px) 1fr; gap: 14px; align-items: center; }
+  .bar > b { font-size: 15px; }
+  .bar > .track { position: relative; height: 34px; border-radius: 8px; background: var(--soft); overflow: hidden; }
+  .bar > .track > i { position: absolute; inset: 0 auto 0 0; width: var(--v, 50%); background: var(--c); border-radius: 8px; opacity: .9; transition: width .6s ease; }
+  .bar > .track > span { position: relative; z-index: 1; display: block; line-height: 34px; padding: 0 12px; font-size: 14px; font-weight: 600; }
+  .bar.hl > .track { box-shadow: 0 0 0 3px var(--accent); }
+
+  /* Tree: nested lists with connectors */
+  .tree, .tree ul { list-style: none; margin: 0; padding-left: 22px; }
+  .tree { padding-left: 0; }
+  .tree li { position: relative; padding: 4px 0 4px 18px; }
+  .tree ul li::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; border-left: 2px solid var(--line); }
+  .tree ul li:last-child::before { bottom: auto; height: 18px; }
+  .tree ul li::after { content: ""; position: absolute; left: 0; top: 18px; width: 14px; border-top: 2px solid var(--line); }
+  .tree .node { min-width: 0; padding: 5px 12px; font-size: 14.5px; }
+
+  /* Circle: items placed around a circle by angle (--a). "ring" draws the circle;
+     "cycle" draws it dashed; --seg paints coloured segments; .arc highlights a span. */
+  .circle { --size: 300px; --pad: 26px; --w: 10px; position: relative; width: var(--size); max-width: 100%; aspect-ratio: 1; margin: 6px auto; }
+  .circle.ring::before, .circle.cycle::before { content: ""; position: absolute; inset: var(--pad); border-radius: 50%; border: var(--w) solid var(--line); }
+  .circle.cycle::before { border-width: 2px; border-style: dashed; inset: calc(var(--pad) + var(--w) / 2 - 1px); }
+  .circle.ring[style*="--seg"]::before { border: none; background: var(--seg);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--w)), #000 calc(100% - var(--w) + 1px));
+              mask: radial-gradient(farthest-side, transparent calc(100% - var(--w)), #000 calc(100% - var(--w) + 1px)); }
+  .circle > .arc { position: absolute; inset: var(--pad); border-radius: 50%;
+      background: conic-gradient(from var(--from), var(--c, var(--accent)) 0 calc(var(--to) - var(--from)), transparent 0);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--w)), #000 calc(100% - var(--w) + 1px));
+              mask: radial-gradient(farthest-side, transparent calc(100% - var(--w)), #000 calc(100% - var(--w) + 1px)); }
+  .circle > .group { position: absolute; inset: 0; }
+  .circle > .arc.moving { animation: pulse 1s ease-in-out infinite alternate; }
+  @keyframes pulse { from { opacity: .45; } to { opacity: 1; } }
+  .on-circle { position: absolute; left: 50%; top: 50%; z-index: 1;
+      transform: translate(-50%, -50%) rotate(var(--a)) translateY(calc(var(--size) / -2 + var(--pad) + var(--w) / 2 - var(--out, 0px))) rotate(calc(-1 * var(--a))); }
+  .circle .center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; padding: 30%; color: var(--muted); font-size: 14px; }
+  .badge { --c: var(--accent); display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--c);
+           color: #fff; font-weight: 700; font-size: 15px; box-shadow: 0 0 0 3px var(--surface); transition: all .3s ease; }
+  .badge.hl { box-shadow: 0 0 0 3px var(--surface), 0 0 0 6px var(--accent); }
+  .pin { --c: var(--muted); display: block; width: 14px; height: 14px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--surface); }
+  .pin.ring-out { box-shadow: 0 0 0 2px var(--surface), 0 0 0 5px var(--red); }
+  .pin.hl { box-shadow: 0 0 0 2px var(--surface), 0 0 0 5px var(--accent); }
+  .tag-label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+
+  /* Row: illustrations side by side, each with an optional caption */
+  .row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; align-items: start; }
+  .row > div > .caption, .row > div > b { display: block; text-align: center; }
+  .row > div > b { margin-top: 6px; }
+  .row > div > .caption { margin-top: 2px; }
+
+  /* Graph: HTML nodes placed by --x/--y (percent of the box, node centre);
+     arrows are drawn at load time from the <i class="link"> elements. */
+  .graph { position: relative; height: var(--h, 300px); margin: 8px 0; }
+  .graph > .node { position: absolute; left: calc(var(--x) * 1%); top: calc(var(--y) * 1%); transform: translate(-50%, -50%); white-space: nowrap; z-index: 1; }
+  .graph > .link { display: none; }
+  .graph > svg.links { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+  .graph path { fill: none; stroke: var(--muted); stroke-width: 2; transition: stroke .3s ease; }
+  .graph path.hl { stroke: var(--accent); stroke-width: 3; }
+  .graph path.moving { stroke: var(--accent); stroke-dasharray: 8 7; animation: dash 1s linear infinite; }
+  .graph text { font: 12.5px var(--sans); fill: var(--muted); paint-order: stroke; stroke: var(--surface); stroke-width: 5px; text-anchor: middle; dominant-baseline: middle; }
   @keyframes dash { to { stroke-dashoffset: -30; } }
-  .c-blue { --c: var(--blue); } .c-orange { --c: var(--orange); } .c-teal { --c: var(--teal); }
-  .c-purple { --c: var(--purple); } .c-red { --c: var(--red); } .c-green { --c: var(--green); }
-  .fill-c { fill: var(--c); } .stroke-c { stroke: var(--c); }
-  @media (prefers-reduced-motion: reduce) { .flow { animation: none; } }
 
-  /* Stepper: an SVG scene + <ol class="steps">; JS adds controls */
+  /* Stepper: a .scene of components + <ol class="steps">; JS adds controls.
+     Elements with class "el" are hidden until a step lists them in data-show. */
   .stepper .el { opacity: 0; transition: opacity .35s ease; }
-  .stepper .el.on { opacity: 1; }
-  .stepper .dim { opacity: .25; transition: opacity .35s ease; }
-  .no-js .stepper .el, html:not(.js) .stepper .el { opacity: 1; }
+  .stepper .el.on, html:not(.js) .stepper .el { opacity: 1; }
+  .stepper .dim { opacity: .28; }
   .steps { margin: 12px 0 0; }
-  .js .steps { display: none; }
-  .step-caption { min-height: 64px; margin-top: 12px; }
-  .step-caption strong { display: block; }
+  .js .stepper .steps { display: none; }
+  .step-caption { min-height: 64px; margin-top: 14px; }
   .controls { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
   .controls button, .toggle button { font: 600 14px var(--sans); padding: 7px 14px; border-radius: 9px; border: 1px solid var(--line);
                                       background: var(--surface); color: var(--ink); cursor: pointer; }
@@ -125,29 +226,16 @@
   .controls button:disabled { opacity: .4; cursor: default; }
   .controls .count { margin-left: auto; color: var(--muted); font: 13px var(--mono); }
 
-  /* Compare: two panes; JS turns them into a toggle */
-  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
-  .compare-pane h4 { margin: 0 0 8px; }
-  .compare-pane svg { width: 100%; max-width: 520px; height: auto; display: block; margin: 0 auto; }
+  /* Compare: two or more panes; JS turns them into a toggle */
+  .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin: 20px 0; }
+  .compare-pane h4 { margin: 0 0 10px; }
   .js .compare { display: block; }
   .js .compare-pane { display: none; }
   .js .compare-pane.active { display: block; }
-  .toggle { display: inline-flex; gap: 6px; margin-bottom: 10px; }
+  .toggle { display: inline-flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
   .toggle button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
 
-  /* Tables, code, lists */
-  table { border-collapse: collapse; width: 100%; margin: 18px 0; background: var(--surface); border-radius: 12px; overflow: hidden; font-size: 15.5px; }
-  th, td { border-bottom: 1px solid var(--line); padding: 10px 14px; text-align: left; vertical-align: top; }
-  th { background: var(--soft); font-size: 14px; }
-  code { font: 0.9em var(--mono); background: var(--code-bg); padding: 1px 6px; border-radius: 6px; }
-  pre { background: var(--code-bg); padding: 16px 18px; border-radius: 12px; overflow: auto; font-size: 14px; line-height: 1.5; }
-  pre code { background: none; padding: 0; }
-  .takeaways { list-style: none; padding: 0; counter-reset: k; }
-  .takeaways li { counter-increment: k; position: relative; padding: 12px 16px 12px 52px; margin: 10px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
-  .takeaways li::before { content: counter(k); position: absolute; left: 14px; top: 11px; width: 26px; height: 26px; border-radius: 50%;
-                          background: var(--accent); color: var(--surface); font: 700 14px/26px var(--sans); text-align: center; }
-
-  /* Multi-video notes: source tags and coverage grid */
+  /* Multi-video notes: source tags, coverage grid, sources list */
   .vtag { display: inline-block; font: 700 11.5px/1 var(--mono); padding: 4px 7px; border-radius: 6px; margin-left: 6px;
           vertical-align: 2px; color: #fff; background: var(--c, var(--muted)); }
   .vtag.v1 { --c: var(--blue); } .vtag.v2 { --c: var(--orange); } .vtag.v3 { --c: var(--teal); }
@@ -163,14 +251,31 @@
   .sources-list { display: grid; gap: 10px; padding: 0; list-style: none; }
   .sources-list li { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 16px; }
 
+  /* Tables, code, takeaways */
+  table { border-collapse: collapse; width: 100%; margin: 18px 0; background: var(--surface); border-radius: 12px; overflow: hidden; font-size: 15.5px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 10px 14px; text-align: left; vertical-align: top; }
+  th { background: var(--soft); font-size: 14px; }
+  code { font: 0.9em var(--mono); background: var(--code-bg); padding: 1px 6px; border-radius: 6px; }
+  pre { background: var(--code-bg); padding: 16px 18px; border-radius: 12px; overflow: auto; font-size: 14px; line-height: 1.5; }
+  pre code { background: none; padding: 0; }
+  .takeaways { list-style: none; padding: 0; counter-reset: k; }
+  .takeaways li { counter-increment: k; position: relative; padding: 12px 16px 12px 52px; margin: 10px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  .takeaways li::before { content: counter(k); position: absolute; left: 14px; top: 11px; width: 26px; height: 26px; border-radius: 50%;
+                          background: var(--accent); color: var(--surface); font: 700 14px/26px var(--sans); text-align: center; }
+
   /* Floating nav buttons (anchors, so they work without JS) */
   .fab { position: fixed; right: 22px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
-         background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--ink); text-decoration: none; z-index: 30; }
+         background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--ink); text-decoration: none;
+         z-index: 30; font-size: 20px; line-height: 1; }
   .fab:hover { border-color: var(--accent); color: var(--accent); }
-  .fab svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   .fab.home { bottom: 78px; }
   .fab.top { bottom: 24px; }
   footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); margin-top: 40px; padding-top: 14px; }
+
+  @media (prefers-color-scheme: dark) { .badge { color: var(--bg); } }
+  /* Colour classes come last so they override each component's default colour */
+  .c-blue { --c: var(--blue); } .c-orange { --c: var(--orange); } .c-teal { --c: var(--teal); }
+  .c-purple { --c: var(--purple); } .c-red { --c: var(--red); } .c-green { --c: var(--green); }
 </style>
 </head>
 <body>
@@ -225,46 +330,66 @@
       <h2>Key ideas</h2>
       <h3 id="mod-n">Why hash mod N breaks</h3>
       <p>Changing N from 4 to 5 gives a different answer for most keys. A key keeps its server only when <code>h mod 4 == h mod 5</code>.</p>
-      <figure class="figure"><svg viewBox="0 0 800 190" role="img" aria-label="Share of keys that move when going from 4 to 5 servers">
-  <text class="lbl" x="20" y="40" style="text-anchor:start">hash(key) mod N</text>
-  <rect class="box soft" x="230" y="20" width="520" height="40" rx="8"/>
-  <g class="c-red"><rect class="fill-c" x="230" y="20" width="416" height="40" rx="8" opacity=".85"/></g>
-  <text class="lbl" x="438" y="41" style="fill:#fff">~80% of keys move</text>
-  <text class="lbl" x="20" y="120" style="text-anchor:start">Hash ring</text>
-  <rect class="box soft" x="230" y="100" width="520" height="40" rx="8"/>
-  <g class="c-teal"><rect class="fill-c" x="230" y="100" width="104" height="40" rx="8" opacity=".9"/></g>
-  <text class="sub" x="345" y="121" style="text-anchor:start">~20% move: only the new server's share (1/N)</text>
-  <text class="sub" x="490" y="175">Going from 4 to 5 servers</text>
-</svg><figcaption>Share of keys that change server when the cluster grows from 4 to 5 servers.</figcaption></figure>
+      <figure class="figure">
+        <div class="figure-body bars">
+          <div class="bar c-red" style="--v:80%"><b>hash(key) mod N</b><div class="track"><i></i><span style="color:#fff">~80% of keys move</span></div></div>
+          <div class="bar c-teal" style="--v:20%"><b>Hash ring</b><div class="track"><i></i><span>~20% move: only the new server's share (1/N)</span></div></div>
+        </div>
+        <figcaption>Share of keys that change server when the cluster grows from 4 to 5 servers.</figcaption></figure>
       <div class="callout added"><span class="label">Added context (not from the video)</span>
         <p>Why 80%: among any 20 consecutive hash values, <code>h mod 4 == h mod 5</code> holds for just 4 of them, so about 20% stay.</p></div>
 
       <h3 id="ring">The hash ring</h3>
       <p>Bend the hash range (0 to 2³²) into a circle. Hash each server's name to place it, hash each key the same way, and give each key to the <strong>first server clockwise</strong>.</p>
-      <figure class="figure"><svg viewBox="0 0 800 350" role="img" aria-label="Hash ring with servers A to D; a key walks clockwise to server C"><defs><marker id="arr-ring" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" style="color:var(--muted)"/></marker></defs><circle cx="400" cy="175" r="125" fill="none" stroke="var(--line)" stroke-width="10"/><path class="edge hl flow" d="M479.6,237.2 A101,101 0 0 1 370.5,271.6" marker-end="url(#arr-ring)"/><g><g class="c-blue"><circle class="fill-c" cx="495.8" cy="94.7" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-blue"><circle class="fill-c" cx="523.1" cy="153.3" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="502.4" cy="246.7" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="480.3" cy="270.8" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="421.7" cy="298.1" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="389.1" cy="299.5" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-purple"><circle class="fill-c" cx="304.2" cy="255.3" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-purple"><circle class="fill-c" cx="276.9" cy="196.7" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-orange"><circle class="fill-c" cx="319.7" cy="79.2" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-orange"><circle class="fill-c" cx="378.3" cy="51.9" r="7" stroke="var(--surface)" stroke-width="2"/></g></g><g class="c-orange"><circle class="fill-c" cx="442.8" cy="57.5" r="17"/><text class="lbl" x="442.8" y="57.5" style="fill:#fff">A</text></g><g class="c-blue"><circle class="fill-c" cx="517.5" cy="217.8" r="17"/><text class="lbl" x="517.5" y="217.8" style="fill:#fff">B</text></g><g class="c-teal"><circle class="fill-c" cx="357.2" cy="292.5" r="17"/><text class="lbl" x="357.2" y="292.5" style="fill:#fff">C</text></g><g class="c-purple"><circle class="fill-c" cx="282.5" cy="132.2" r="17"/><text class="lbl" x="282.5" y="132.2" style="fill:#fff">D</text></g><text class="sub" x="400.0" y="18.0">0 = 2³²</text><text class="sub" x="640" y="70" style="text-anchor:start">clockwise ↻</text><circle cx="502.4" cy="246.7" r="13" fill="none" stroke="var(--accent)" stroke-width="3"/><text class="sub" x="553.2" y="269.6" style="text-anchor:start;fill:var(--accent);font-weight:600">this key</text><text class="sub" x="140" y="175" style="text-anchor:middle">Keys take the colour</text><text class="sub" x="140" y="195">of their server</text></svg><figcaption>The highlighted key walks clockwise and lands on server C.</figcaption></figure>
+      <figure class="figure">
+        <div class="figure-body circle ring" style="--size:330px">
+          <div class="arc" style="--from:125deg;--to:200deg"></div>
+          <span class="on-circle" style="--a:50deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:80deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:125deg"><i class="pin c-teal hl"></i></span><span class="on-circle" style="--a:140deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:170deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:185deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:230deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:260deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:320deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:350deg"><i class="pin c-orange"></i></span>
+          <span class="on-circle" style="--a:20deg"><b class="badge c-orange">A</b></span><span class="on-circle" style="--a:110deg"><b class="badge c-blue">B</b></span><span class="on-circle" style="--a:200deg"><b class="badge c-teal">C</b></span><span class="on-circle" style="--a:290deg"><b class="badge c-purple">D</b></span>
+          <span class="on-circle" style="--a:0deg;--out:26px"><span class="tag-label">0 = 2³²</span></span>
+          <span class="on-circle" style="--a:125deg;--out:40px"><span class="tag-label" style="color:var(--accent);font-weight:600">this key</span></span>
+          <div class="center">clockwise ↻<br>keys take the colour of their server</div>
+        </div>
+        <figcaption>The highlighted key walks clockwise and lands on server C.</figcaption></figure>
 
       <h3 id="add-remove">Adding or removing a server</h3>
       <p>When server E joins between B and C, only the keys between B and E change owner. Removing a server is the mirror image: its keys go to the next server clockwise.</p>
       <div class="compare">
-        <div class="compare-pane" data-label="Before: A–D"><h4>Before: four servers</h4><svg viewBox="0 0 420 330" role="img" aria-label="Ring with servers A to D"><circle cx="210" cy="165" r="115" fill="none" stroke="var(--line)" stroke-width="9"/><g><g class="c-blue"><circle class="fill-c" cx="298.1" cy="91.1" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-blue"><circle class="fill-c" cx="323.3" cy="145.0" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="304.2" cy="231.0" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="283.9" cy="253.1" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="230.0" cy="278.3" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="200.0" cy="279.6" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-purple"><circle class="fill-c" cx="121.9" cy="238.9" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-purple"><circle class="fill-c" cx="96.7" cy="185.0" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-orange"><circle class="fill-c" cx="136.1" cy="76.9" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-orange"><circle class="fill-c" cx="190.0" cy="51.7" r="7" stroke="var(--surface)" stroke-width="2"/></g></g><g class="c-orange"><circle class="fill-c" cx="249.3" cy="56.9" r="17"/><text class="lbl" x="249.3" y="56.9" style="fill:#fff">A</text></g><g class="c-blue"><circle class="fill-c" cx="318.1" cy="204.3" r="17"/><text class="lbl" x="318.1" y="204.3" style="fill:#fff">B</text></g><g class="c-teal"><circle class="fill-c" cx="170.7" cy="273.1" r="17"/><text class="lbl" x="170.7" y="273.1" style="fill:#fff">C</text></g><g class="c-purple"><circle class="fill-c" cx="101.9" cy="125.7" r="17"/><text class="lbl" x="101.9" y="125.7" style="fill:#fff">D</text></g></svg></div>
-        <div class="compare-pane" data-label="After: E joins"><h4>After: E joins (moved keys circled)</h4><svg viewBox="0 0 420 330" role="img" aria-label="Ring after server E joins; two keys move to E"><circle cx="210" cy="165" r="115" fill="none" stroke="var(--line)" stroke-width="9"/><g><g class="c-blue"><circle class="fill-c" cx="298.1" cy="91.1" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-blue"><circle class="fill-c" cx="323.3" cy="145.0" r="7" stroke="var(--surface)" stroke-width="2"/></g><circle cx="304.2" cy="231.0" r="12" fill="none" stroke="var(--red)" stroke-width="2.5"/><g class="c-red"><circle class="fill-c" cx="304.2" cy="231.0" r="7" stroke="var(--surface)" stroke-width="2"/></g><circle cx="283.9" cy="253.1" r="12" fill="none" stroke="var(--red)" stroke-width="2.5"/><g class="c-red"><circle class="fill-c" cx="283.9" cy="253.1" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="230.0" cy="278.3" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="200.0" cy="279.6" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-purple"><circle class="fill-c" cx="121.9" cy="238.9" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-purple"><circle class="fill-c" cx="96.7" cy="185.0" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-orange"><circle class="fill-c" cx="136.1" cy="76.9" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-orange"><circle class="fill-c" cx="190.0" cy="51.7" r="7" stroke="var(--surface)" stroke-width="2"/></g></g><g class="c-orange"><circle class="fill-c" cx="249.3" cy="56.9" r="17"/><text class="lbl" x="249.3" y="56.9" style="fill:#fff">A</text></g><g class="c-blue"><circle class="fill-c" cx="318.1" cy="204.3" r="17"/><text class="lbl" x="318.1" y="204.3" style="fill:#fff">B</text></g><g class="c-teal"><circle class="fill-c" cx="170.7" cy="273.1" r="17"/><text class="lbl" x="170.7" y="273.1" style="fill:#fff">C</text></g><g class="c-purple"><circle class="fill-c" cx="101.9" cy="125.7" r="17"/><text class="lbl" x="101.9" y="125.7" style="fill:#fff">D</text></g><g class="c-red"><circle class="fill-c" cx="267.5" cy="264.6" r="17"/><text class="lbl" x="267.5" y="264.6" style="fill:#fff">E</text></g></svg></div>
+        <div class="compare-pane" data-label="Before: A–D"><h4>Before: four servers</h4><div class="circle ring" style="--size:280px"><span class="on-circle" style="--a:50deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:80deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:125deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:140deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:170deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:185deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:230deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:260deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:320deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:350deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:20deg"><b class="badge c-orange">A</b></span><span class="on-circle" style="--a:110deg"><b class="badge c-blue">B</b></span><span class="on-circle" style="--a:200deg"><b class="badge c-teal">C</b></span><span class="on-circle" style="--a:290deg"><b class="badge c-purple">D</b></span></div></div>
+        <div class="compare-pane" data-label="After: E joins"><h4>After: E joins (moved keys circled)</h4><div class="circle ring" style="--size:280px"><span class="on-circle" style="--a:50deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:80deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:125deg"><i class="pin c-red ring-out"></i></span><span class="on-circle" style="--a:140deg"><i class="pin c-red ring-out"></i></span><span class="on-circle" style="--a:170deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:185deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:230deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:260deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:320deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:350deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:20deg"><b class="badge c-orange">A</b></span><span class="on-circle" style="--a:110deg"><b class="badge c-blue">B</b></span><span class="on-circle" style="--a:200deg"><b class="badge c-teal">C</b></span><span class="on-circle" style="--a:290deg"><b class="badge c-purple">D</b></span><span class="on-circle" style="--a:150deg"><b class="badge c-red">E</b></span></div></div>
       </div>
 
       <h3 id="vnodes">Virtual nodes</h3>
       <p>With few servers, positions land unevenly and one server can own a huge arc. Hashing each server many times (typically 100–200) spreads it into many small arcs, so load evens out, a leaving server's keys spread over many neighbours, and bigger machines can simply get more virtual nodes.</p>
-      <figure class="figure"><svg viewBox="0 0 800 350" role="img" aria-label="Without virtual nodes one server owns a huge arc; with them, arcs are small and even"><g class="c-orange"><path class="stroke-c" d="M303.1,180.0 A105,105 0 1 1 266.1,78.4" fill="none" stroke-width="14"/></g><g class="c-blue"><path class="stroke-c" d="M268.9,80.8 A105,105 0 0 1 298.0,122.4" fill="none" stroke-width="14"/></g><g class="c-teal"><path class="stroke-c" d="M299.3,125.8 A105,105 0 0 1 303.7,176.4" fill="none" stroke-width="14"/></g><g class="c-orange"><circle class="fill-c" cx="267.5" cy="79.6" r="11"/><text class="lbl" x="267.5" y="79.6" style="fill:#fff;font-size:12px">A</text></g><g class="c-blue"><circle class="fill-c" cx="298.7" cy="124.1" r="11"/><text class="lbl" x="298.7" y="124.1" style="fill:#fff;font-size:12px">B</text></g><g class="c-teal"><circle class="fill-c" cx="303.4" cy="178.2" r="11"/><text class="lbl" x="303.4" y="178.2" style="fill:#fff;font-size:12px">C</text></g><text class="lbl" x="200" y="300">Without virtual nodes</text><text class="sub" x="200" y="326">A owns ~300° of the ring</text><g class="c-orange"><path class="stroke-c" d="M578.2,57.3 A105,105 0 0 1 611.0,55.6" fill="none" stroke-width="14"/></g><g class="c-blue"><path class="stroke-c" d="M614.6,56.0 A105,105 0 0 1 646.0,65.6" fill="none" stroke-width="14"/></g><g class="c-teal"><path class="stroke-c" d="M649.3,67.3 A105,105 0 0 1 675.5,87.1" fill="none" stroke-width="14"/></g><g class="c-orange"><path class="stroke-c" d="M678.0,89.7 A105,105 0 0 1 695.9,117.3" fill="none" stroke-width="14"/></g><g class="c-blue"><path class="stroke-c" d="M697.4,120.7 A105,105 0 0 1 704.7,152.7" fill="none" stroke-width="14"/></g><g class="c-teal"><path class="stroke-c" d="M704.9,156.3 A105,105 0 0 1 700.9,188.9" fill="none" stroke-width="14"/></g><g class="c-orange"><path class="stroke-c" d="M699.9,192.4 A105,105 0 0 1 684.9,221.7" fill="none" stroke-width="14"/></g><g class="c-blue"><path class="stroke-c" d="M682.7,224.6 A105,105 0 0 1 658.7,247.0" fill="none" stroke-width="14"/></g><g class="c-teal"><path class="stroke-c" d="M655.6,249.0 A105,105 0 0 1 625.4,261.9" fill="none" stroke-width="14"/></g><g class="c-orange"><path class="stroke-c" d="M621.8,262.7 A105,105 0 0 1 589.0,264.4" fill="none" stroke-width="14"/></g><g class="c-blue"><path class="stroke-c" d="M585.4,264.0 A105,105 0 0 1 554.0,254.4" fill="none" stroke-width="14"/></g><g class="c-teal"><path class="stroke-c" d="M550.7,252.7 A105,105 0 0 1 524.5,232.9" fill="none" stroke-width="14"/></g><g class="c-orange"><path class="stroke-c" d="M522.0,230.3 A105,105 0 0 1 504.1,202.7" fill="none" stroke-width="14"/></g><g class="c-blue"><path class="stroke-c" d="M502.6,199.3 A105,105 0 0 1 495.3,167.3" fill="none" stroke-width="14"/></g><g class="c-teal"><path class="stroke-c" d="M495.1,163.7 A105,105 0 0 1 499.1,131.1" fill="none" stroke-width="14"/></g><g class="c-orange"><path class="stroke-c" d="M500.1,127.6 A105,105 0 0 1 515.1,98.3" fill="none" stroke-width="14"/></g><g class="c-blue"><path class="stroke-c" d="M517.3,95.4 A105,105 0 0 1 541.3,73.0" fill="none" stroke-width="14"/></g><g class="c-teal"><path class="stroke-c" d="M544.4,71.0 A105,105 0 0 1 574.6,58.1" fill="none" stroke-width="14"/></g><text class="lbl" x="600" y="300">With virtual nodes</text><text class="sub" x="600" y="326">each server ≈ ⅓, in small pieces</text></svg><figcaption>Same three servers: uneven arcs on the left; many small, balanced arcs on the right.</figcaption></figure>
+      <figure class="figure">
+        <div class="figure-body row">
+          <div><div class="circle ring" style="--size:250px;--w:16px;--seg:conic-gradient(var(--orange) 0deg 40deg, var(--blue) 40deg 70deg, var(--teal) 70deg 100deg, var(--orange) 100deg 360deg)">
+            <span class="on-circle" style="--a:40deg"><b class="badge c-orange">A</b></span><span class="on-circle" style="--a:70deg"><b class="badge c-blue">B</b></span><span class="on-circle" style="--a:100deg"><b class="badge c-teal">C</b></span><div class="center">A owns ~300°</div></div>
+            <b>Without virtual nodes</b><span class="caption">one server owns most of the ring</span></div>
+          <div><div class="circle ring" style="--size:250px;--w:16px;--seg:conic-gradient(var(--orange) 0deg 7deg, var(--blue) 7deg 27deg, var(--teal) 27deg 47deg, var(--orange) 47deg 67deg, var(--blue) 67deg 87deg, var(--teal) 87deg 107deg, var(--orange) 107deg 127deg, var(--blue) 127deg 147deg, var(--teal) 147deg 167deg, var(--orange) 167deg 187deg, var(--blue) 187deg 207deg, var(--teal) 207deg 227deg, var(--orange) 227deg 247deg, var(--blue) 247deg 267deg, var(--teal) 267deg 287deg, var(--orange) 287deg 307deg, var(--blue) 307deg 327deg, var(--teal) 327deg 347deg, var(--orange) 347deg 360deg)">
+            <div class="center">each ≈ ⅓</div></div>
+            <b>With virtual nodes</b><span class="caption">each server ≈ ⅓, in small pieces</span></div>
+        </div>
+        <figcaption>Same three servers: uneven arcs on the left; many small, balanced arcs on the right.</figcaption></figure>
     </section>
 
     <section class="panel" id="walkthrough" role="tabpanel">
       <h2>Walkthrough: server E joins</h2>
       <p>Step through what happens to ten keys when a fifth server joins.</p>
       <div class="figure stepper">
-        <svg viewBox="0 0 800 360" role="img" aria-label="Server E joins the ring; only keys between B and E move"><defs><marker id="arr-step" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" style="color:var(--muted)"/></marker></defs><circle cx="400" cy="180" r="125" fill="none" stroke="var(--line)" stroke-width="10"/><path id="st-walk" class="el edge hl flow" d="M479.6,242.2 A101,101 0 0 1 370.5,276.6" marker-end="url(#arr-step)"/><g id="st-keys-before" class="el"><g class="c-blue"><circle class="fill-c" cx="495.8" cy="99.7" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-blue"><circle class="fill-c" cx="523.1" cy="158.3" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="502.4" cy="251.7" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="480.3" cy="275.8" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="421.7" cy="303.1" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="389.1" cy="304.5" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-purple"><circle class="fill-c" cx="304.2" cy="260.3" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-purple"><circle class="fill-c" cx="276.9" cy="201.7" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-orange"><circle class="fill-c" cx="319.7" cy="84.2" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-orange"><circle class="fill-c" cx="378.3" cy="56.9" r="7" stroke="var(--surface)" stroke-width="2"/></g></g><g id="st-keys-after" class="el"><g class="c-blue"><circle class="fill-c" cx="495.8" cy="99.7" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-blue"><circle class="fill-c" cx="523.1" cy="158.3" r="7" stroke="var(--surface)" stroke-width="2"/></g><circle cx="502.4" cy="251.7" r="12" fill="none" stroke="var(--red)" stroke-width="2.5"/><g class="c-red"><circle class="fill-c" cx="502.4" cy="251.7" r="7" stroke="var(--surface)" stroke-width="2"/></g><circle cx="480.3" cy="275.8" r="12" fill="none" stroke="var(--red)" stroke-width="2.5"/><g class="c-red"><circle class="fill-c" cx="480.3" cy="275.8" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="421.7" cy="303.1" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-teal"><circle class="fill-c" cx="389.1" cy="304.5" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-purple"><circle class="fill-c" cx="304.2" cy="260.3" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-purple"><circle class="fill-c" cx="276.9" cy="201.7" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-orange"><circle class="fill-c" cx="319.7" cy="84.2" r="7" stroke="var(--surface)" stroke-width="2"/></g><g class="c-orange"><circle class="fill-c" cx="378.3" cy="56.9" r="7" stroke="var(--surface)" stroke-width="2"/></g></g><g class="c-orange" id="st-A"><circle class="fill-c" cx="442.8" cy="62.5" r="17"/><text class="lbl" x="442.8" y="62.5" style="fill:#fff">A</text></g><g class="c-blue" id="st-B"><circle class="fill-c" cx="517.5" cy="222.8" r="17"/><text class="lbl" x="517.5" y="222.8" style="fill:#fff">B</text></g><g class="c-teal" id="st-C"><circle class="fill-c" cx="357.2" cy="297.5" r="17"/><text class="lbl" x="357.2" y="297.5" style="fill:#fff">C</text></g><g class="c-purple" id="st-D"><circle class="fill-c" cx="282.5" cy="137.2" r="17"/><text class="lbl" x="282.5" y="137.2" style="fill:#fff">D</text></g><g class="el c-red" id="st-E"><circle class="fill-c" cx="462.5" cy="288.3" r="17"/><text class="lbl" x="462.5" y="288.3" style="fill:#fff">E</text></g><text id="st-modn" class="el sub" x="680" y="320" style="font-size:14px">mod N would move ~8 of 10</text></svg>
+        <div class="scene circle ring" style="--size:330px">
+          <div class="arc el" id="st-walk" style="--from:125deg;--to:200deg"></div>
+          <div class="group el" id="st-keys-before"><span class="on-circle" style="--a:50deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:80deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:125deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:140deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:170deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:185deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:230deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:260deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:320deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:350deg"><i class="pin c-orange"></i></span></div>
+          <div class="group el" id="st-keys-after"><span class="on-circle" style="--a:50deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:80deg"><i class="pin c-blue"></i></span><span class="on-circle" style="--a:125deg"><i class="pin c-red ring-out"></i></span><span class="on-circle" style="--a:140deg"><i class="pin c-red ring-out"></i></span><span class="on-circle" style="--a:170deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:185deg"><i class="pin c-teal"></i></span><span class="on-circle" style="--a:230deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:260deg"><i class="pin c-purple"></i></span><span class="on-circle" style="--a:320deg"><i class="pin c-orange"></i></span><span class="on-circle" style="--a:350deg"><i class="pin c-orange"></i></span></div>
+          <span class="on-circle" style="--a:20deg"><b class="badge c-orange" id="st-A">A</b></span><span class="on-circle" style="--a:110deg"><b class="badge c-blue" id="st-B">B</b></span><span class="on-circle" style="--a:200deg"><b class="badge c-teal" id="st-C">C</b></span><span class="on-circle" style="--a:290deg"><b class="badge c-purple" id="st-D">D</b></span>
+          <span class="on-circle el" id="st-E" style="--a:150deg"><b class="badge c-red" id="st-Eb">E</b></span>
+          <div class="center"><span class="el" id="st-modn">mod N would move ~8 of 10</span></div>
+        </div>
         <ol class="steps">
           <li data-show="st-keys-before"><strong>1 · Four servers</strong> Each key takes the colour of the first server clockwise from it.</li>
-          <li data-show="st-keys-before st-walk" data-hl="st-C" data-flow="st-walk"><strong>2 · A lookup</strong> This key walks clockwise and meets C first, so C owns it.</li>
-          <li data-show="st-keys-before st-E" data-hl="st-E"><strong>3 · E joins</strong> E hashes to a point between B and C. Keys elsewhere still meet the same server first.</li>
-          <li data-show="st-keys-after st-E" data-hl="st-E"><strong>4 · Only two keys move</strong> Keys between B and E now meet E before C (circled). 2 of 10 keys moved: about 1/N.</li>
+          <li data-show="st-keys-before st-walk" data-hl="st-C" data-move="st-walk"><strong>2 · A lookup</strong> This key walks clockwise and meets C first, so C owns it.</li>
+          <li data-show="st-keys-before st-E" data-hl="st-Eb"><strong>3 · E joins</strong> E hashes to a point between B and C. Keys elsewhere still meet the same server first.</li>
+          <li data-show="st-keys-after st-E" data-hl="st-Eb"><strong>4 · Only two keys move</strong> Keys between B and E now meet E before C (circled). 2 of 10 keys moved: about 1/N.</li>
           <li data-show="st-keys-after st-E st-modn"><strong>5 · Compared with mod N</strong> The same change with hash mod N would have moved about 8 of the 10 keys.</li>
         </ol>
       </div>
@@ -310,12 +435,8 @@
 </div>
 
 <!-- Floating navigation: home = first tab, top = top of page. Anchors, so they work without JS. -->
-<a class="fab home" href="#overview" aria-label="Home (first tab)" title="Home">
-  <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
-</a>
-<a class="fab top" href="#page-top" aria-label="Back to top" title="Back to top">
-  <svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
-</a>
+<a class="fab home" href="#overview" aria-label="Home (first tab)" title="Home">⌂</a>
+<a class="fab top" href="#page-top" aria-label="Back to top" title="Back to top">↑</a>
 
 <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Expanded figure">
   <div class="inner"><button type="button" class="close" id="lightbox-close">Close ✕</button><div id="lightbox-body"></div></div>
@@ -329,9 +450,52 @@
   "use strict";
   var root = document.documentElement;
   root.classList.add("js");
-  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
-  var panels = Array.prototype.slice.call(document.querySelectorAll(".panel"));
+  var $$ = function (sel, el) { return Array.prototype.slice.call((el || document).querySelectorAll(sel)); };
+  var tabs = $$(".tab"), panels = $$(".panel");
   var firstId = panels.length ? panels[0].id : "";
+  var SVGNS = "http://www.w3.org/2000/svg", graphCount = 0;
+
+  /* Graph: draw arrows between HTML nodes. Paths are created once and reused,
+     so a stepper can keep classes (hl, moving) on them across redraws. */
+  function drawGraph(g) {
+    if (!g.offsetWidth) return;
+    var svg = g.querySelector(":scope > svg.links");
+    if (!svg) {
+      svg = document.createElementNS(SVGNS, "svg"); svg.setAttribute("class", "links"); svg.setAttribute("aria-hidden", "true");
+      var mid = "ga" + (++graphCount);
+      svg.innerHTML = '<defs><marker id="' + mid + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">' +
+        '<path d="M0,0 L10,5 L0,10 z" style="fill:var(--muted);stroke:none"/></marker></defs>';
+      svg.dataset.marker = mid;
+      g.insertBefore(svg, g.firstChild);
+    }
+    var box = g.getBoundingClientRect();
+    function find(id) { return g.querySelector('[id="' + id + '"], [data-gid="' + id + '"]'); }
+    function rect(el) { var r = el.getBoundingClientRect(); return { x: r.left - box.left + r.width / 2, y: r.top - box.top + r.height / 2, w: r.width / 2 + 6, h: r.height / 2 + 6 }; }
+    function edge(r, dx, dy) { var s = Math.min(r.w / Math.abs(dx || 1e-9), r.h / Math.abs(dy || 1e-9)); return { x: r.x + dx * s, y: r.y + dy * s }; }
+    $$(":scope > .link", g).forEach(function (l) {
+      var a = find(l.dataset.from), b = find(l.dataset.to);
+      if (!a || !b) return;
+      if (!l._path) {
+        l._path = document.createElementNS(SVGNS, "path");
+        l._path.setAttribute("marker-end", "url(#" + svg.dataset.marker + ")");
+        if (l.id) { l._path.id = l.id; l.dataset.gid = l.id; l.removeAttribute("id"); }
+        (l.getAttribute("class") || "").split(/\s+/).forEach(function (c) { if (c && c !== "link") l._path.classList.add(c); });
+        svg.appendChild(l._path);
+        if (l.dataset.label) { l._text = document.createElementNS(SVGNS, "text"); l._text.textContent = l.dataset.label; svg.appendChild(l._text); }
+      }
+      var ra = rect(a), rb = rect(b), curve = parseFloat(l.dataset.curve || "0");
+      var dx = rb.x - ra.x, dy = rb.y - ra.y, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+      var cx = (ra.x + rb.x) / 2 + nx * curve * 2, cy = (ra.y + rb.y) / 2 + ny * curve * 2;
+      var p1 = edge(ra, cx - ra.x, cy - ra.y), p2 = edge(rb, cx - rb.x, cy - rb.y);
+      l._path.setAttribute("d", curve ? "M" + p1.x + "," + p1.y + " Q" + cx + "," + cy + " " + p2.x + "," + p2.y : "M" + p1.x + "," + p1.y + " L" + p2.x + "," + p2.y);
+      if (l._text) {
+        var tx = curve ? (p1.x + 2 * cx + p2.x) / 4 : (p1.x + p2.x) / 2, ty = curve ? (p1.y + 2 * cy + p2.y) / 4 : (p1.y + p2.y) / 2;
+        var off = curve ? (curve > 0 ? 14 : -14) : 0;
+        l._text.setAttribute("x", tx + nx * off); l._text.setAttribute("y", ty + ny * off - (curve ? 0 : 10));
+      }
+    });
+  }
+  function drawGraphs(scope) { $$(".graph", scope).forEach(drawGraph); }
 
   function panelFor(id) {
     if (!id) return null;
@@ -348,9 +512,9 @@
       t.setAttribute("aria-selected", on ? "true" : "false");
       t.setAttribute("tabindex", on ? "0" : "-1");
     });
-    var target = scrollTarget || null;
-    if (target && target !== panel) { target.scrollIntoView(); }
-    else if (scrollTarget === null) { window.scrollTo(0, 0); }
+    drawGraphs(panel);
+    if (scrollTarget && scrollTarget !== panel) scrollTarget.scrollIntoView();
+    else if (scrollTarget === null) window.scrollTo(0, 0);
   }
   function fromHash() {
     var id = decodeURIComponent((location.hash || "").slice(1));
@@ -373,12 +537,12 @@
     });
   });
   window.addEventListener("hashchange", fromHash);
+  var resizeTimer;
+  window.addEventListener("resize", function () { clearTimeout(resizeTimer); resizeTimer = setTimeout(function () { drawGraphs(document); }, 120); });
 
-  // Home button: first tab and top of page. Top button: top of page.
+  // Home: first tab and top of page. Top: top of page.
   var home = document.querySelector(".fab.home");
-  if (home) home.addEventListener("click", function (e) {
-    e.preventDefault(); history.replaceState(null, "", "#" + firstId); show(firstId, null);
-  });
+  if (home) home.addEventListener("click", function (e) { e.preventDefault(); history.replaceState(null, "", "#" + firstId); show(firstId, null); });
   var top = document.querySelector(".fab.top");
   if (top) top.addEventListener("click", function (e) { e.preventDefault(); window.scrollTo(0, 0); });
 
@@ -387,8 +551,7 @@
     var hs = p.querySelectorAll("h3[id]");
     if (hs.length < 3) return;
     var nav = document.createElement("nav");
-    nav.className = "minitoc";
-    nav.setAttribute("aria-label", "In this section");
+    nav.className = "minitoc"; nav.setAttribute("aria-label", "In this section");
     Array.prototype.forEach.call(hs, function (h) {
       var a = document.createElement("a");
       a.href = "#" + h.id; a.textContent = h.textContent;
@@ -402,15 +565,17 @@
   // Expandable figures (lightbox).
   var lb = document.getElementById("lightbox"), lbBody = document.getElementById("lightbox-body");
   function closeLb() { lb.classList.remove("open"); lbBody.innerHTML = ""; }
-  Array.prototype.forEach.call(document.querySelectorAll(".figure"), function (fig) {
-    var svg = fig.querySelector("svg");
-    if (!svg || fig.classList.contains("stepper")) return;
+  $$(".figure").forEach(function (fig) {
+    if (fig.classList.contains("stepper")) return;
     var b = document.createElement("button");
     b.type = "button"; b.className = "expand"; b.textContent = "Expand";
     b.addEventListener("click", function () {
-      var clone = svg.cloneNode(true);
-      Array.prototype.forEach.call(clone.querySelectorAll("[id]"), function (n) { n.removeAttribute("id"); });
+      var clone = fig.cloneNode(true);
+      $$("button.expand, svg.links", clone).forEach(function (n) { n.remove(); });
+      $$("[id]", clone).forEach(function (n) { n.dataset.gid = n.id; n.removeAttribute("id"); });
+      clone.classList.remove("figure"); clone.style.cssText = "";
       lbBody.appendChild(clone); lb.classList.add("open");
+      drawGraphs(clone);
     });
     fig.appendChild(b);
   });
@@ -421,8 +586,8 @@
   }
 
   // Compare panes -> toggle.
-  Array.prototype.forEach.call(document.querySelectorAll(".compare"), function (cmp) {
-    var panes = cmp.querySelectorAll(".compare-pane");
+  $$(".compare").forEach(function (cmp) {
+    var panes = cmp.querySelectorAll(":scope > .compare-pane");
     if (panes.length < 2) return;
     var bar = document.createElement("div"); bar.className = "toggle"; bar.setAttribute("role", "group");
     var buttons = [];
@@ -432,6 +597,7 @@
       b.addEventListener("click", function () {
         Array.prototype.forEach.call(panes, function (q, j) { q.classList.toggle("active", i === j); });
         buttons.forEach(function (x, j) { x.setAttribute("aria-pressed", i === j ? "true" : "false"); });
+        drawGraphs(cmp);
       });
       buttons.push(b); bar.appendChild(b);
     });
@@ -439,12 +605,12 @@
     buttons[0].click();
   });
 
-  // Steppers.
-  Array.prototype.forEach.call(document.querySelectorAll(".stepper"), function (st) {
-    var steps = Array.prototype.slice.call(st.querySelectorAll(".steps > li"));
+  // Steppers: work on any elements inside .scene (nodes, arrows, badges, pins, graph links).
+  $$(".stepper").forEach(function (st) {
+    var steps = $$(":scope > .steps > li", st);
+    var scene = st.querySelector(".scene") || st;
     if (!steps.length) return;
-    var svg = st.querySelector("svg");
-    var els = svg ? Array.prototype.slice.call(svg.querySelectorAll(".el")) : [];
+    drawGraphs(st);
     var cap = document.createElement("div"); cap.className = "step-caption"; cap.setAttribute("aria-live", "polite");
     var bar = document.createElement("div"); bar.className = "controls";
     function mk(label, aria) { var b = document.createElement("button"); b.type = "button"; b.textContent = label; b.setAttribute("aria-label", aria); bar.appendChild(b); return b; }
@@ -453,15 +619,17 @@
     st.appendChild(cap); st.appendChild(bar);
     var i = 0, timer = null;
     function ids(li, attr) { return (li.getAttribute(attr) || "").split(/\s+/).filter(Boolean); }
+    function byId(id) { return scene.querySelector('[id="' + id + '"]'); }
     function setClass(list, cls) {
-      Array.prototype.forEach.call(svg.querySelectorAll("." + cls), function (n) { n.classList.remove(cls); });
-      list.forEach(function (id) { var n = svg.querySelector("#" + CSS.escape(id)); if (n) n.classList.add(cls); });
+      $$("." + cls, scene).forEach(function (n) { n.classList.remove(cls); });
+      list.forEach(function (id) { var n = byId(id); if (n) n.classList.add(cls); });
     }
     function go(k) {
+      drawGraphs(st);
       i = Math.max(0, Math.min(steps.length - 1, k));
       var li = steps[i], showSet = ids(li, "data-show");
-      els.forEach(function (n) { n.classList.toggle("on", showSet.indexOf(n.id) >= 0); });
-      setClass(ids(li, "data-hl"), "hl"); setClass(ids(li, "data-flow"), "flow"); setClass(ids(li, "data-dim"), "dim");
+      $$(".el", scene).forEach(function (n) { n.classList.toggle("on", showSet.indexOf(n.id) >= 0); });
+      setClass(ids(li, "data-hl"), "hl"); setClass(ids(li, "data-move"), "moving"); setClass(ids(li, "data-dim"), "dim");
       cap.innerHTML = li.innerHTML;
       prev.disabled = i === 0; next.disabled = i === steps.length - 1;
       count.textContent = (i + 1) + " / " + steps.length;
@@ -480,6 +648,7 @@
   });
 
   fromHash();
+  drawGraphs(document);
 })();
 </script>
 </body>
