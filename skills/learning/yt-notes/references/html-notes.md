@@ -22,6 +22,9 @@ Each note is one self-contained page, `<Note_Title>.html`, built from `assets/no
 | **Compare** | `<div class="compare">` with two or more `<div class="compare-pane" data-label="Before">…</div>`. JS turns them into a toggle | panes side by side |
 | **Takeaways** | `<ol class="takeaways"><li>…</li></ol>`, rendered as numbered cards | same |
 | **Table / code** | plain `<table>`, `<pre><code>` | same |
+| **Source tag** (combined notes) | `<span class="vtag v2">V2</span>` after a heading or point that comes mainly from one video; `v1`…`v5` have distinct colours | same |
+| **Coverage grid** (combined notes) | `<table class="coverage">` with ideas as rows and `V1`… as columns; cells `<td class="full"></td>` (in depth), `<td class="part"></td>` (briefly) or `<td class="none"></td>` (not covered), drawn as filled, half-filled and dash markers. Add the legend under it: `<p class="cov-legend"><span><span class="dot full"></span> in depth</span><span><span class="dot part"></span> briefly</span><span>– not covered</span></p>` | same |
+| **Sources list** (combined notes) | `<ul class="sources-list"><li><span class="vtag v1">V1</span> <strong>Title</strong> · channel · date · duration · transcript kind</li>…</ul>` | same |
 | **Mini contents** | automatic: a panel with 3+ `<h3 id="…">` gets clickable chips under its `<h2>` | `h3`s still visible |
 
 Visual drawing rules (sizes, spacing, colour classes, animation) are in `visuals.md`.

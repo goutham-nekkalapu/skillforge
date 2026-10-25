@@ -4,6 +4,7 @@
   notes_paths.py where
       Print the save location banner + existing topics.
   notes_paths.py prepare --source <source_dir> --topic "System Design" --title "Consistent Hashing" [--format html|markdown]
+      Repeat --source (up to max_videos, default 5) for one note combining several videos.
       Create the note folder and print the file names/links to use (JSON).
       If a note for the same video already exists anywhere, it is reported so
       it can be regenerated in place instead of duplicated.
@@ -86,11 +87,47 @@ def note_files(root: Path):
                 yield t, md
 
 
-def find_note_for_video(root: Path, vid: str):
+def note_video_ids(fm: dict) -> set[str]:
+    """Video ids a note covers: video_ids (combined note) or video_id (single)."""
+    ids = fm.get("video_ids")
+    if isinstance(ids, list) and ids:
+        return {str(i) for i in ids}
+    return {fm["video_id"]} if fm.get("video_id") else set()
+
+
+def find_existing_note(root: Path, vids: list[str]):
+    """The note to regenerate for these videos, or None.
+
+    Single video: a single-video note for it. Several videos: a combined note
+    whose videos are a subset or superset of the requested ones (same set =
+    regenerate; superset of the old set = "add a video to my note").
+    """
+    want = set(vids)
     for t, md in note_files(root):
-        if frontmatter(md).get("video_id") == vid:
-            return t, md
+        fm = frontmatter(md)
+        have = note_video_ids(fm)
+        if not have:
+            continue
+        combined = bool(fm.get("video_ids"))
+        if len(want) == 1 and not combined and have == want:
+            return t, md, have
+        if len(want) > 1 and combined and (have <= want or want <= have):
+            return t, md, have
     return None
+
+
+def single_notes_for(root: Path, vids: list[str], exclude: Path | None = None) -> list[dict]:
+    """Existing single-video notes for any of these videos (linked from a combined card)."""
+    out = []
+    for t, md in note_files(root):
+        if exclude is not None and md.resolve() == exclude.resolve():
+            continue
+        fm = frontmatter(md)
+        if fm.get("video_ids") or fm.get("video_id") not in vids:
+            continue
+        label = fm.get("title") or C.display_name(md.stem)
+        out.append({"video_id": fm.get("video_id"), "note": str(md), "wikilink": f"[[{md.stem}|{label}]]"})
+    return out
 
 
 def cmd_where(cfg):
@@ -102,18 +139,49 @@ def cmd_where(cfg):
             "settings_from": cfg.get("_settings_from", []), "topics": ts}
 
 
+def transcript_link(src: Path):
+    md = next(iter(sorted(src.glob("transcript_*.md")) + sorted(src.glob("transcript - *.md"))), None)
+    return f"[[{md.stem}|Full transcript]]" if md else None
+
+
 def cmd_prepare(cfg, args):
-    src = Path(args.source).expanduser()
-    meta_path = src / "meta.json"
-    if not meta_path.exists():
-        sys.exit(f"ERROR: {meta_path} not found - fetch the transcript first (yt-transcript).")
-    meta = json.loads(meta_path.read_text(encoding="utf-8"))
-    vid = meta.get("video_id")
+    sources = []
+    for s in args.source:
+        if s not in sources:
+            sources.append(s)
+    max_videos = int(cfg.get("max_videos") or 5)
+    if len(sources) > max_videos:
+        sys.exit(f"ERROR: {len(sources)} videos given; the limit is {max_videos} per note (setting max_videos). "
+                 f"Split them by subtopic into separate notes, or raise max_videos.")
+    videos = []
+    for s in sources:
+        src = Path(s).expanduser()
+        meta_path = src / "meta.json"
+        if not meta_path.exists():
+            sys.exit(f"ERROR: {meta_path} not found - fetch the transcript first (yt-transcript).")
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        videos.append({
+            "tag": f"V{len(videos) + 1}",
+            "video_id": meta.get("video_id"),
+            "title": meta.get("title"),
+            "channel": meta.get("channel"),
+            "url": meta.get("url"),
+            "duration_seconds": meta.get("duration_seconds"),
+            "transcript_kind": (meta.get("transcript") or {}).get("kind"),
+            "source_dir": str(src),
+            "transcript_wikilink": transcript_link(src),
+        })
+    vids = [v["video_id"] for v in videos if v["video_id"]]
+    combined = len(videos) > 1
+    src = Path(sources[0]).expanduser()
+    vid = vids[0] if vids else None
     root = cfg["_root"]
     topic_parts = [C.safe_name(p, 60) for p in re.split(r"[/\\]", args.topic) if p.strip()]
     title = C.safe_name(args.title, 90)
 
-    existing = find_note_for_video(root, vid) if vid else None
+    found = find_existing_note(root, vids) if vids else None
+    existing = (found[0], found[1]) if found else None
+    previous_videos = sorted(found[2]) if found else []
     if existing and not args.new_location:
         e_topic, e_md = existing
         note_dir, title = e_md.parent, e_md.stem
@@ -128,7 +196,6 @@ def cmd_prepare(cfg, args):
         sys.exit(f"ERROR: note format must be 'html' or 'markdown', not {fmt!r}")
     card_md = note_dir / f"{title}.md"            # html mode: small card; markdown mode: the note itself
     page_html = note_dir / f"{title}.html"         # html mode: the full note
-    transcript_md = next(iter(sorted(src.glob("transcript_*.md")) + sorted(src.glob("transcript - *.md"))), None)
     vault = C.find_vault_root(cfg["_root"], cfg.get("obsidian_vault_root") or "")
     embed_path = None
     if vault:
@@ -146,7 +213,7 @@ def cmd_prepare(cfg, args):
         "regenerating_existing_note": bool(existing),
         "page_wikilink": f"[[{page_html.name}|Open the full note]]" if fmt == "html" else None,
         "page_embed_block": (f"```html-embed\nfile: {embed_path}\n```" if (embed_path and fmt == "html") else None),
-        "transcript_wikilink": f"[[{transcript_md.stem}|Full transcript]]" if transcript_md else None,
+        "transcript_wikilink": videos[0]["transcript_wikilink"],
         "vault_root": str(vault) if vault else None,
         "source_dir": str(src),
         "topic": topic_rel,
@@ -154,6 +221,12 @@ def cmd_prepare(cfg, args):
         "drive_files": [p.name for p in ((page_html, card_md) if fmt == "html" else (card_md,))],
         "today": date.today().isoformat(),
         "video_id": vid,
+        "combined": combined,
+        "videos": videos,
+        "previous_videos": previous_videos,
+        "added_videos": [v for v in vids if previous_videos and v not in previous_videos],
+        "single_notes": single_notes_for(root, vids, exclude=card_md) if combined else [],
+        "max_videos": max_videos,
         "existing_topics": topics(root),
     }
     print(json.dumps(out, indent=2, ensure_ascii=False))
@@ -174,7 +247,8 @@ def rebuild_topic_index(root: Path, topic: str):
             # "\|" because a bare pipe inside a table cell would split the column
             "link": f"[[{rel}\\|{fm.get('title') or C.display_name(md.stem)}]]{page_link}",
             "summary": (fm.get("summary") or "").replace("|", "/"),
-            "channel": (fm.get("channel") or "").replace("|", "/"),
+            "channel": (f"{len(note_video_ids(fm))} videos" if fm.get("video_ids")
+                        else (fm.get("channel") or "")).replace("|", "/"),
             "created": fm.get("created") or "",
             "status": fm.get("status") or "",
         })
@@ -215,7 +289,8 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("where")
     p = sub.add_parser("prepare")
-    p.add_argument("--source", required=True)
+    p.add_argument("--source", required=True, action="append",
+                   help="transcript package folder; repeat for a note combining several videos")
     p.add_argument("--topic", required=True)
     p.add_argument("--title", required=True)
     p.add_argument("--format", choices=["html", "markdown"],

@@ -38,6 +38,50 @@ Use domain-appropriate tab names when they read better ("Architecture", "Code", 
 - **Short paragraphs, scannable.** Bold the key term where it's defined. Tables for comparisons, callouts for warnings and tips.
 - **No timestamps, interview questions or flashcards.** The user builds those across many notes.
 
+## Combined notes (several videos)
+
+Same blocks and rules, with these additions (workflow in SKILL.md, "Combining several videos"):
+
+| Block | What changes |
+|---|---|
+| **Overview** | The TL;DR covers the topic as a whole, not video by video. Optionally one line on how the videos differ in angle ("V1 is the theory, V2 a production case study") |
+| **Key ideas** | Shared ideas explained once (best explanation wins), distinct ideas tagged with their video (`V2`) |
+| **Coverage** | A grid of the main ideas against the videos: covered in depth / briefly / not at all |
+| **Videos differ** | Only if they disagree: a callout per disagreement, showing each view and which is better supported |
+| **Sources** | Every video with its tag, title, channel, date, duration and transcript kind |
+
+Tags `V1`… follow the order the videos were given. A combined note's title names the topic, not a video.
+
+The combined card uses lists, written inline:
+
+````markdown
+---
+title: "Consistent Hashing"
+aliases: ["Consistent Hashing"]
+summary: "..."
+topic: "System Design"
+tags: [system-design, hashing]
+status: new
+format: html
+video_ids: ["abc123XYZ00", "def456UVW11"]
+video_urls: ["https://www.youtube.com/watch?v=abc123XYZ00", "https://www.youtube.com/watch?v=def456UVW11"]
+channels: ["Channel One", "Channel Two"]
+created: "2026-10-25"
+---
+
+# Consistent Hashing
+
+**[[Consistent_Hashing.html|Open the full note]]** · combines 2 videos
+
+- TL;DR bullets…
+
+Sources:
+- V1: [Video one title](https://www.youtube.com/watch?v=abc123XYZ00) · Channel One · [[transcript_abc123XYZ00|Full transcript]]
+- V2: [Video two title](https://www.youtube.com/watch?v=def456UVW11) · Channel Two · [[transcript_def456UVW11|Full transcript]]
+
+Also has its own note: [[Ring_Hashing_Deep_Dive|Ring Hashing Deep Dive]] (V2)
+````
+
 ## Videos that aren't concept explainers
 
 Keep the same spirit, with tabs that fit the content:

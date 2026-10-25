@@ -7,6 +7,7 @@ Paste a YouTube link, ask for notes, and get deep, visual, Obsidian-ready study 
 Fetches the video's transcript, description and chapters (via [yt-transcript](../yt-transcript/)), picks out the ideas that matter (leaving out repetition, side stories and minor details), and turns them into a visual note.
 
 - **HTML format (default):** one self-contained page per note, with tabs for each section, home and back-to-top buttons, cards, callouts, hand-drawn SVG illustrations you can expand, step-through animations and before/after toggles. A small markdown card next to it keeps the note in Obsidian search, tags and the topic index.
+- **Several videos, one note:** give up to 5 videos on the same topic and get one combined note. Shared ideas are explained once, ideas unique to one video are tagged with it (`V2`), disagreements are called out, and a coverage grid shows which video covers what. Existing single-video notes are linked from the combined card, not replaced.
 - **Markdown format:** an Obsidian note with inline SVG illustrations. Ask for it per note ("as markdown") or set `note_format`.
 
 Notes are checked automatically (the page loads without errors, tabs work, illustrations are valid) and organised as `<Topic>/<Note_Title>/` with an auto-built index per topic. Folder and file names use underscores instead of spaces (e.g. `System_Design/Consistent_Hashing/Consistent_Hashing.html`); titles inside the notes keep their spaces.
@@ -61,10 +62,11 @@ Settings:
 | `transcriptapi_key` | empty | Fallback when yt-dlp is blocked (or set `TRANSCRIPTAPI_KEY`). Sign up at https://transcriptapi.com/signup, then create a key at https://transcriptapi.com/dashboard/api-keys |
 | `supadata_key` | empty | AI transcription for videos with no captions (or set `SUPADATA_API_KEY`). Sign up at https://dash.supadata.ai, then copy your key from https://dash.supadata.ai/organizations/api-key |
 | `tiers` | yt-dlp, TranscriptAPI, Supadata | Order of transcript sources to try. |
+| `max_videos` | `5` | Most videos combined into one note. |
 | `note_format` | `html` | `html` (rich tabbed page plus a markdown card) or `markdown` (markdown note with inline SVG). Override per request: "make these notes as markdown". |
 | `obsidian_vault_root` | empty | Your vault path. Usually not needed: it's found automatically from the `.obsidian` folder above `notes_root`. Used for the optional inline embed in cards. |
 
-On claude.ai, only `drive_root`, `note_format`, `languages` and `tiers` matter. Leave API keys out of the skill's `config.json` and use the Supadata / TranscriptAPI connectors instead.
+On claude.ai, only `drive_root`, `note_format`, `max_videos`, `languages` and `tiers` matter. Leave API keys out of the skill's `config.json` and use the Supadata / TranscriptAPI connectors instead.
 
 If a setting appears in several places, later ones win: built-in defaults → the skill's `config.json` → `~/.yt-notes/config.json` (values you haven't changed from the defaults are ignored) → environment variables. Every run shows which files it loaded.
 
@@ -83,6 +85,8 @@ In the request itself: ask for a format (*"as markdown"*), name a topic (*"…un
 "Make notes from https://youtu.be/…"
 "Turn this video into study notes I can refer to later"
 "Regenerate the notes for this video"
+"Combine these three videos on consistent hashing into one note: <link> <link> <link>"
+"Add this video to my Consistent Hashing note: <link>"
 ```
 
 ## Good to Know

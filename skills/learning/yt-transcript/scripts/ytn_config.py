@@ -44,6 +44,8 @@ DEFAULTS = {
     # Usually not needed: it is found automatically by looking for a .obsidian
     # folder above notes_root.
     "obsidian_vault_root": "",
+    # Most videos yt-notes combines into one note.
+    "max_videos": 5,
     # Preferred transcript languages, in order.
     "languages": ["en"],
     # Order of transcript sources to try.

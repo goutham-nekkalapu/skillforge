@@ -28,7 +28,9 @@ import xml.etree.ElementTree as ET
 from html.parser import HTMLParser
 from pathlib import Path
 
-REQUIRED = ["title", "video_url", "video_id", "topic", "tags", "created", "summary"]
+REQUIRED = ["title", "topic", "tags", "created", "summary"]
+# A single-video note has video_id + video_url; a combined note has video_ids + video_urls.
+SINGLE_KEYS, COMBINED_KEYS = ["video_id", "video_url"], ["video_ids", "video_urls"]
 
 
 # ---------------------------------------------------------------- markdown
@@ -46,6 +48,13 @@ def check_markdown(path: Path, errors, warnings, is_card=False, page: Path | Non
         errors.append(f"{path.name}: missing YAML frontmatter at the top")
     else:
         missing = [k for k in REQUIRED if k not in keys]
+        if "video_ids" in keys:
+            missing += [k for k in COMBINED_KEYS if k not in keys]
+            ids = re.search(r"^video_ids:\s*\[(.*)\]\s*$", fm, re.M)
+            if not ids:
+                errors.append(f"{path.name}: video_ids must be an inline list, e.g. video_ids: [\"abc123XYZ00\", \"def456UVW11\"]")
+        else:
+            missing += [k for k in SINGLE_KEYS if k not in keys]
         if missing:
             errors.append(f"{path.name}: frontmatter missing keys: {', '.join(missing)}")
     body = re.sub(r"```.*?```", "", text, flags=re.S)

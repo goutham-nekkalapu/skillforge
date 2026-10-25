@@ -1,6 +1,6 @@
 ---
 name: yt-notes
-description: Turn a YouTube video into distilled, highly visual study notes saved to the user's notes folder, organised by topic so they can be revisited for learning and interview prep. By default each note is a rich single-page HTML file with tabs, hand-drawn SVG illustrations and animations (plus a small markdown card for Obsidian search); markdown notes with inline SVG are available on request. Uses the yt-transcript skill to get the transcript, description and chapters first. Use this whenever the user shares a YouTube link and asks for notes, study notes, a write-up, a breakdown, a summary to keep, "notes I can refer to later", or wants to "learn this video", even if they don't say "notes" explicitly. Also use it to regenerate or improve notes for a video already processed. For transcript files or screenshots the user already has (e.g. from a course platform) with no YouTube link, use lecture-distiller instead.
+description: Turn a YouTube video, or up to 5 videos on one topic combined, into distilled, highly visual study notes saved by topic in the user's notes folder for learning and interview prep. By default each note is a single-page HTML file with tabs, hand-drawn SVG illustrations and animations, plus a small markdown card for Obsidian search; markdown with inline SVG on request. Uses the yt-transcript skill to get transcripts, descriptions and chapters first. Use this whenever the user shares YouTube links and asks for notes, study notes, a write-up, a breakdown, a summary to keep, "notes I can refer to later", or wants to "learn this video", even without saying "notes". Also use it to combine several videos into one note, add a video to an existing note, or regenerate notes. For transcript files or screenshots the user already has (e.g. from a course platform) with no YouTube link, use lecture-distiller instead.
 ---
 
 # yt-notes
@@ -22,6 +22,8 @@ Make notes that let the user understand and revise a topic weeks later without r
 **Format:** `note_format` in the settings, `html` by default. The user can override it per request ("as markdown", "as HTML"), and you pass that to `prepare` with `--format`.
 
 **Distilled, not exhaustive:** keep the ideas that matter, explained well and shown visually; leave out repetition, side stories and minor details. There's no length limit. Length comes from how much important material the video has, not from covering everything said.
+
+**One video or several:** given several links on the same topic, make **one combined note** (up to `max_videos`, default 5). The steps below apply to both; the extra work for combined notes is in "Combining several videos" further down. Videos on unrelated topics get separate notes.
 
 ## Step 1: Tell the user where notes will be saved (every time)
 
@@ -121,5 +123,27 @@ Keep it short:
 
 - **"Regenerate / improve the notes for <video>"**: run the steps again. The cached transcript is reused, and the note is overwritten in place.
 - **"Move this note to topic X"**: move the folder on disk, then run `index --all`.
-- **Several videos**: process them one at a time, reusing topics so related notes land together.
-- **Playlist or series**: one note per video in the same topic, each linking to the others with wikilinks.
+- **Several videos on unrelated topics**: separate notes, one at a time, reusing topics so related notes land together.
+- **Playlist or series**: if the user wants one note, combine (up to the limit); otherwise one note per video in the same topic, linked to each other.
+
+## Combining several videos into one note
+
+Use this when the user gives 2–5 videos on the same topic and wants one note. The point is one clear explanation of the topic, drawing on the best of each video, not several summaries glued together.
+
+1. **Check the count.** More than `max_videos` (default 5; `prepare` reports it) is too many for one note. Suggest splitting them by subtopic, or ask which to drop. Very long videos (over ~1 hour) count heavily, so with several of those suggest fewer per note.
+2. **Fetch each video** with yt-transcript, one after another. Cached packages are reused. If a video can't be fetched, carry on with the rest and tell the user which one was skipped and why. Never fill the gap from the title.
+3. **Outline each video on its own**: read its transcript fully and write a compact outline of its ideas, examples, numbers and claims, labelled `V1`, `V2`… in the order given. Merge outlines, not raw transcripts. This keeps each video's content straight.
+4. **Map the overlap.** For each idea, note which videos cover it and how well:
+   - **Shared** (several videos): explain it once, using the clearest explanation or example from any video, and combine complementary details.
+   - **Distinct** (one video): keep it if it passes the distillation test, and tag it with its source.
+   - **Conflicting** (videos disagree, or one is outdated): don't pick silently. Show both views in a "Videos differ" callout, and say which is better supported if the videos make that clear.
+5. **Prepare** with every package: `notes_paths.py prepare --source <dir1> --source <dir2> … --topic … --title …`. The title names the topic, not any one video. The output includes `videos` (each with its `tag`, title, channel, url and `transcript_wikilink`), `single_notes` (existing single-video notes for these videos, to link from the card), and, when the note already exists, `previous_videos` and `added_videos`.
+6. **Write the note** as usual, plus:
+   - **Source tags**: put a `<span class="vtag v2">V2</span>` after a heading or point that comes mainly from one video (in markdown, write `(V2)`). Shared ideas don't need tags.
+   - **A Coverage view** (a tab, or a section in Overview): a grid of the main ideas against the videos (`full` / `part` / `none` cells) so the user can see which video to rewatch for what. Template classes are in `references/html-notes.md`.
+   - **"Videos differ" callouts** wherever they disagree.
+   - **A Sources tab** listing every video with its tag, title, channel, date, duration and transcript kind.
+7. **The card** uses `video_ids` and `video_urls` (inline lists) instead of `video_id` and `video_url`, lists each video's transcript link, and links any `single_notes` as "Also has its own note". Don't replace or delete single-video notes. Format in `references/note-structure.md`.
+8. **On claude.ai**, save every video's source package to Drive (each under `_sources/`), as well as the page and card.
+
+**Adding a video to an existing combined note** ("add this video to my Consistent Hashing note"): fetch it, then `prepare` with all the note's videos plus the new one (`previous_videos` lists them). It finds the existing note, and you regenerate it, merging the new video's content and giving it the next tag.

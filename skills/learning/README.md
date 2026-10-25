@@ -20,7 +20,7 @@ Skills for transforming educational content into structured, revision-friendly s
 |---|---|---|
 | **You give it** | Transcript files (`v1.md`, `v2.md`…) and screenshots, e.g. from Coursera, Udemy, deeplearning.ai | A YouTube link |
 | **Gets the transcript** | No, you supply it | Yes, fetches transcript, description and chapters (via `yt-transcript`) |
-| **Scope** | A whole course module: several videos merged into one document | One video → one note |
+| **Scope** | A whole course module: several videos merged into one document | One video → one note, or up to 5 videos on one topic combined (overlap merged, sources tagged) |
 | **Style** | Condensed: 20–30% of the transcript, bullet points, quick revision | Distilled and visual: the ideas that matter, explained with intuition and pictures |
 | **Visuals** | Your screenshots as numbered figures, plus diagrams | Hand-drawn SVG illustrations, step-through animations and toggles in a tabbed HTML page |
 | **Self-test questions** | Yes | No (build them later across many notes) |
