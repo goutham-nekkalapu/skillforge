@@ -97,7 +97,8 @@ def cmd_where(cfg):
     ts = topics(cfg["_root"])
     print("Existing topics: " + (", ".join(ts) if ts else "(none yet)"))
     return {"notes_root": str(cfg["_root"]), "environment": cfg["_env"], "drive_root": cfg["drive_root"],
-            "config_path": str(cfg["_config_path"]), "topics": ts}
+            "config_path": str(cfg["_config_path"]), "skill_config": str(cfg["_skill_config"]),
+            "settings_from": cfg.get("_settings_from", []), "topics": ts}
 
 
 def cmd_prepare(cfg, args):

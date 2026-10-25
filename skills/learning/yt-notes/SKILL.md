@@ -5,7 +5,7 @@ description: Turn a YouTube video into deep, visual study notes saved to the use
 
 # yt-notes
 
-Make notes that let the user understand and revise a topic weeks later without rewatching the video. Notes are saved by topic under the shared notes root (default `~/YouTubeNotes`, set in `~/.yt-notes/config.json`):
+Make notes that let the user understand and revise a topic weeks later without rewatching the video. Notes are saved by topic under the shared notes root (default `~/YouTubeNotes`; settings live in `~/.yt-notes/config.json` on the user's computer, or in the yt-transcript skill's `config.json` on claude.ai):
 
 ```
 <notes_root>/
@@ -26,7 +26,7 @@ Depth defaults to **deep**. Use quick mode only if the user asks for a summary o
 python3 <skill_dir>/scripts/notes_paths.py where
 ```
 
-Tell the user in one line where the notes will go, from the "Notes root" in the banner. If the environment is `cloud-sandbox`, say they'll be saved to their Google Drive folder `<drive_root>/…` instead, because the local disk is temporary. Do this on every run. Keep the `topics` list it returns; you'll reuse existing topic names.
+Tell the user in one line where the notes will go, from the "Notes root" in the banner. If the environment is `cloud-sandbox`, say they'll be saved to their Google Drive folder (the banner's "Drive folder") instead, because the local disk is temporary; if they ask how to change it, point them to `config.json` in the yt-transcript skill. Do this on every run. Keep the `topics` list it returns; you'll reuse existing topic names.
 
 ## Step 2: Get the source package
 

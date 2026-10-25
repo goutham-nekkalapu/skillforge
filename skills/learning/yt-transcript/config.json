@@ -1,0 +1,6 @@
+{
+  "_help": "Settings for the yt-transcript and yt-notes skills (yt-notes reads this file too). On claude.ai this is the file to edit; on your own computer, edit ~/.yt-notes/config.json instead, which takes priority. Don't put API keys here: on claude.ai use the Supadata / TranscriptAPI connectors, on your computer use environment variables or ~/.yt-notes/config.json.",
+  "drive_root": "YouTubeNotes",
+  "languages": ["en"],
+  "tiers": ["ytdlp", "transcriptapi", "supadata"]
+}
