@@ -36,10 +36,16 @@ Ask: *"Make notes from https://youtube.com/watch?v=…"*. Files are saved to `~/
 1. Zip each skill folder (`yt-transcript`, `yt-notes`, `gdrive-save`) and upload it: **Customize → Skills → + → Upload a skill**.
 2. **Customize → Connectors**: connect **Google Drive** (required) and **Supadata** (gets transcripts; no key needed).
 3. Ask the same way. Notes are saved to `My Drive/YouTubeNotes`.
+4. Optional: to use a different Drive folder, change `drive_root` in the yt-transcript skill's `config.json` (see [Configure](#configure)).
 
 ## Configure
 
-Edit `~/.yt-notes/config.json` (created on first run):
+Both skills share one set of settings. Where you edit them depends on where you run the skills:
+
+- **On your computer** (Claude Code, Cursor): `~/.yt-notes/config.json`, created on the first run.
+- **On claude.ai** (web, mobile, desktop chat): `config.json` inside the **yt-transcript** skill. That file is kept with the skill, so changes persist; yt-notes reads it too, so there's one file to edit. Open the skill's files in claude.ai and edit `config.json` directly (or select a value and use **Edit with Claude**).
+
+Settings:
 
 | Setting | Default | What it does |
 |---|---|---|
@@ -52,7 +58,9 @@ Edit `~/.yt-notes/config.json` (created on first run):
 | `tiers` | yt-dlp, TranscriptAPI, Supadata | Order of transcript sources to try. |
 | `obsidian_vault_root` | empty | Your vault path; lets notes embed interactive pages inline. |
 
-On claude.ai the config file isn't kept between sessions. To change `drive_root` there, put a `config.json` with that setting inside the yt-transcript and yt-notes folders before zipping them.
+On claude.ai, only `drive_root`, `languages` and `tiers` matter. Leave API keys out of the skill's `config.json` and use the Supadata / TranscriptAPI connectors instead.
+
+If a setting appears in several places, later ones win: built-in defaults → the skill's `config.json` → `~/.yt-notes/config.json` (values you haven't changed from the defaults are ignored) → environment variables. Every run shows which files it loaded.
 
 In the request itself: say *"quick notes"* for a shorter version, name a topic (*"…under Machine Learning"*), or say *"regenerate"* to redo a note.
 

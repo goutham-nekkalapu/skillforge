@@ -18,7 +18,7 @@ When a key is needed but missing, it stops and says which key, where to get it a
 
 ## Setup
 
-See the [yt-notes README](../yt-notes/README.md#setup). It covers install, API keys and every config setting (`~/.yt-notes/config.json`, shared by both skills).
+See the [yt-notes README](../yt-notes/README.md#setup). It covers install, API keys and every config setting. Settings are shared by both skills: `~/.yt-notes/config.json` on your computer, or this skill's `config.json` on claude.ai.
 
 ## Trigger Phrases
 

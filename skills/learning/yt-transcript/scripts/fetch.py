@@ -581,6 +581,14 @@ CRED_HELP = {
 
 def creds_block(missing: list[str], cfg: dict) -> str:
     lines = ["", "=== CREDENTIALS NEEDED ==="]
+    if cfg.get("_env") == "cloud-sandbox":
+        lines += [
+            "On claude.ai, use connectors instead of keys (nothing to store, no network limits):",
+            "  Customize -> Connectors -> connect Supadata (directory) and/or TranscriptAPI",
+            "  (custom connector https://transcriptapi.com/mcp), then retry. See references/connector-path.md.",
+            "=== END CREDENTIALS NEEDED ===",
+        ]
+        return "\n".join(lines)
     for name in missing:
         title, env, ckey, url = CRED_HELP[name]
         lines += [
@@ -852,7 +860,8 @@ def main():
     print(C.location_banner(cfg), flush=True)
     if args.where:
         return emit({"status": "where", "notes_root": str(cfg["_root"]), "sources_dir": str(cfg["_sources"]),
-                     "config_path": str(cfg["_config_path"]), "environment": cfg["_env"],
+                     "config_path": str(cfg["_config_path"]), "skill_config": str(cfg["_skill_config"]),
+                     "settings_from": cfg.get("_settings_from", []), "environment": cfg["_env"],
                      "drive_root": cfg["drive_root"],
                      "keys_configured": {"transcriptapi": bool(cfg.get("transcriptapi_key")),
                                          "supadata": bool(cfg.get("supadata_key"))}})

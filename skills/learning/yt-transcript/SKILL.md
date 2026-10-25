@@ -14,7 +14,9 @@ Turn a YouTube URL into a saved source package that other skills (notably `yt-no
   transcript.json               # raw timed segments [{start, text}]
 ```
 
-The default `notes_root` is `~/YouTubeNotes` (the device's home folder). The user changes it in the config file `~/.yt-notes/config.json`, which is shared with `yt-notes`.
+The default `notes_root` is `~/YouTubeNotes` (the device's home folder). Settings are shared with `yt-notes`:
+- **On the user's computer:** `~/.yt-notes/config.json` (created on the first run).
+- **On claude.ai:** `config.json` in this skill's folder. It persists with the skill, and yt-notes reads it too. The user edits it among the skill's files in claude.ai. The `~/.yt-notes` file isn't used there, because the sandbox disk is temporary.
 
 **Naming rule:** folder and file names use underscores instead of spaces (`Consistent_Hashing_Explained_abc123XYZ00/`). The script applies this; follow it too for anything you create by hand, such as Drive folders on claude.ai. Titles inside files keep their normal spaces.
 
@@ -26,7 +28,7 @@ Before fetching anything, run:
 python3 <skill_dir>/scripts/fetch.py --where
 ```
 
-Then tell the user in one line where the transcript will be saved, using the "Notes root" / "Transcripts" paths it prints. Do this on every run, not just the first: the user wants to see the location each time. If it says `Environment: cloud-sandbox`, the local disk is temporary, so tell them the files will go to their Google Drive folder `<drive_root>/_sources/` instead (see Step 4). If the banner says the config file was just created, mention that they can edit `notes_root` in it.
+Then tell the user in one line where the transcript will be saved, using the "Notes root" / "Transcripts" paths it prints. Do this on every run, not just the first: the user wants to see the location each time. If it says `Environment: cloud-sandbox`, the local disk is temporary, so tell them the files will go to the banner's "Drive folder" under `_sources/` instead (see Step 4); if they want a different folder, they change `drive_root` in this skill's `config.json`. If the banner says the config file was just created, mention that they can edit `notes_root` in it.
 
 ## Step 2: Fetch
 

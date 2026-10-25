@@ -3,13 +3,20 @@
 Both skills read the SAME user config file so transcripts and notes always land
 under one root folder.
 
-Resolution order (later wins, empty values never override):
+Resolution order (later wins; empty values never override):
   1. Built-in defaults (notes root = ~/YouTubeNotes)
-  2. config.json bundled inside the skill folder (handy for claude.ai uploads)
-  3. User config file: ~/.yt-notes/config.json  (or $YT_NOTES_CONFIG)
+  2. Skill config: config.json inside the yt-transcript skill folder, then one
+     inside this skill's own folder. This is the file to edit on claude.ai,
+     where it is the only config that persists; yt-notes reads yt-transcript's
+     copy, so there is one file to edit.
+  3. User config file: ~/.yt-notes/config.json (or $YT_NOTES_CONFIG), the file
+     to edit on your own computer. Values still equal to the built-in defaults
+     are ignored, so an untouched file never overrides the skill config.
   4. Environment variables: YT_NOTES_ROOT, TRANSCRIPTAPI_KEY, SUPADATA_API_KEY
 
-The user config file is created with defaults on first run so it is easy to edit.
+On a local machine the user config file is created with defaults on first run
+so it is easy to edit. In a cloud sandbox (claude.ai) it is not created,
+because it would be lost when the session ends.
 """
 
 from __future__ import annotations
@@ -54,13 +61,34 @@ def user_config_path() -> Path:
     return Path(os.environ.get("YT_NOTES_CONFIG", "~/.yt-notes/config.json")).expanduser()
 
 
-def _merge(base: dict, extra: dict) -> None:
+def _merge(base: dict, extra: dict, skip_defaults: bool = False) -> bool:
+    """Merge non-empty values into base. Returns True if anything was applied."""
+    applied = False
     for k, v in extra.items():
         if k.startswith("_"):
             continue
         if v in ("", None, [], {}):
             continue
+        if skip_defaults and k in DEFAULTS and v == DEFAULTS[k]:
+            continue
         base[k] = v
+        applied = True
+    return applied
+
+
+def skill_config_paths(skill_dir: Path) -> list[Path]:
+    """Skill-bundled config files, lowest priority first.
+
+    yt-transcript's config.json is the shared one; a config.json in this
+    skill's own folder (if any) is applied after it.
+    """
+    paths = []
+    shared = skill_dir.parent / "yt-transcript" / "config.json"
+    own = skill_dir / "config.json"
+    for p in (shared, own):
+        if p.exists() and p.resolve() not in [q.resolve() for q in paths]:
+            paths.append(p)
+    return paths
 
 
 def _read_json(p: Path) -> dict:
@@ -87,15 +115,19 @@ def environment() -> str:
 def load(skill_dir: Path, root_override: str | None = None) -> dict:
     cfg = dict(DEFAULTS)
     cfg["_created_config"] = False
+    cfg["_settings_from"] = []
+    env = environment()
 
-    bundled = skill_dir / "config.json"
-    if bundled.exists():
-        _merge(cfg, _read_json(bundled))
+    for p in skill_config_paths(skill_dir):
+        if _merge(cfg, _read_json(p)):
+            cfg["_settings_from"].append(str(p))
+    cfg["_skill_config"] = skill_dir.parent / "yt-transcript" / "config.json"
 
     ucp = user_config_path()
     if ucp.exists():
-        _merge(cfg, _read_json(ucp))
-    else:
+        if _merge(cfg, _read_json(ucp), skip_defaults=True):
+            cfg["_settings_from"].append(str(ucp))
+    elif env != "cloud-sandbox":
         try:
             ucp.parent.mkdir(parents=True, exist_ok=True)
             starter = {k: v for k, v in DEFAULTS.items()}
@@ -114,9 +146,9 @@ def load(skill_dir: Path, root_override: str | None = None) -> dict:
         "TRANSCRIPTAPI_KEY": "transcriptapi_key",
         "SUPADATA_API_KEY": "supadata_key",
     }
-    for env, key in env_map.items():
-        if os.environ.get(env):
-            cfg[key] = os.environ[env]
+    for var, key in env_map.items():
+        if os.environ.get(var):
+            cfg[key] = os.environ[var]
 
     if root_override:
         cfg["notes_root"] = root_override
@@ -125,7 +157,7 @@ def load(skill_dir: Path, root_override: str | None = None) -> dict:
     cfg["_root"] = root
     cfg["_sources"] = root / SOURCES_DIRNAME
     cfg["_config_path"] = ucp
-    cfg["_env"] = environment()
+    cfg["_env"] = env
     if isinstance(cfg.get("languages"), str):
         cfg["languages"] = [s.strip() for s in cfg["languages"].split(",") if s.strip()]
     if isinstance(cfg.get("tiers"), str):
@@ -139,14 +171,18 @@ def location_banner(cfg: dict) -> str:
         "📁 YOUTUBE NOTES LOCATION",
         f"  Notes root  : {cfg['_root']}",
         f"  Transcripts : {cfg['_sources']}",
-        f"  Config file : {cfg['_config_path']}  (edit \"notes_root\" to change)",
         f"  Environment : {cfg['_env']}",
     ]
     if cfg["_env"] == "cloud-sandbox":
-        lines.append(
-            f"  NOTE: this disk is temporary. Copy results to Google Drive folder "
-            f"'{cfg['drive_root']}' (My Drive) with the Drive connector."
-        )
+        lines += [
+            f"  Drive folder: My Drive/{cfg['drive_root']}  (this disk is temporary; results are saved there)",
+            f"  Settings    : {cfg['_skill_config']}",
+            "                (to change drive_root on claude.ai, edit config.json in the yt-transcript skill)",
+        ]
+    else:
+        lines.append(f"  Config file : {cfg['_config_path']}  (edit \"notes_root\" to change)")
+    if cfg.get("_settings_from"):
+        lines.append("  Loaded from : " + ", ".join(cfg["_settings_from"]))
     if cfg.get("_created_config"):
         lines.append("  (Config file was just created with defaults.)")
     lines.append("=" * 60)
