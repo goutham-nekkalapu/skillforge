@@ -7,7 +7,7 @@ Skills for transforming educational content into structured, revision-friendly s
 | Skill | Platform | Description |
 |-------|----------|-------------|
 | [lecture-distiller](lecture-distiller/) | All | Distills video transcripts and screenshots you already have into structured, scannable study notes |
-| [yt-notes](yt-notes/) | All | Turns a YouTube link into deep, visual, Obsidian-ready notes (diagrams, examples, interactive walkthroughs), saved by topic |
+| [yt-notes](yt-notes/) | All | Turns a YouTube link into distilled, visual notes: a tabbed HTML page with illustrations and animations (or markdown with inline SVG), saved by topic |
 | [yt-transcript](yt-transcript/) | All | Saves a YouTube video's transcript, description and chapters (yt-dlp → TranscriptAPI → Supadata AI fallback) |
 
 `yt-notes` uses `yt-transcript`, and on claude.ai saves through [google-drive/gdrive-save](../google-drive/gdrive-save/). Install all three together. Setup: [yt-notes README](yt-notes/README.md).
@@ -21,10 +21,10 @@ Skills for transforming educational content into structured, revision-friendly s
 | **You give it** | Transcript files (`v1.md`, `v2.md`…) and screenshots, e.g. from Coursera, Udemy, deeplearning.ai | A YouTube link |
 | **Gets the transcript** | No, you supply it | Yes, fetches transcript, description and chapters (via `yt-transcript`) |
 | **Scope** | A whole course module: several videos merged into one document | One video → one note |
-| **Style** | Condensed: 20–30% of the transcript, bullet points, quick revision | Deep: explains every concept with intuition, examples and trade-offs |
-| **Visuals** | Your screenshots as numbered figures, plus diagrams | Validated Mermaid diagrams, plus an interactive HTML walkthrough when useful |
+| **Style** | Condensed: 20–30% of the transcript, bullet points, quick revision | Distilled and visual: the ideas that matter, explained with intuition and pictures |
+| **Visuals** | Your screenshots as numbered figures, plus diagrams | Hand-drawn SVG illustrations, step-through animations and toggles in a tabbed HTML page |
 | **Self-test questions** | Yes | No (build them later across many notes) |
-| **Saves to** | One markdown file, wherever you are working | Your notes folder by topic (`<Topic>/<Title>/`) with indexes; Google Drive on claude.ai |
+| **Saves to** | One markdown file, wherever you are working | Your notes folder by topic (`<Topic>/<Title>/`): an HTML page plus a markdown card (or a markdown note), with indexes; Google Drive on claude.ai |
 | **Obsidian extras** | No | Frontmatter, `[[wikilinks]]`, callouts, links to the saved transcript |
 
 ## Install All Learning Skills

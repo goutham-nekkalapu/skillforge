@@ -1,116 +1,91 @@
-# Visuals for notes
+# Visuals
 
-Visuals exist to make an idea click faster than prose would. Each diagram should answer one question ("how does a request flow?", "what are the states?"). Put it right next to the text it explains, with a sentence on how to read it.
+Visuals carry the note. Each one should answer one question ("how does a request flow?", "what are the parts?", "what changes when a server joins?") faster than a paragraph could, and sit next to the text it replaces.
+
+**Draw SVG by hand, not Mermaid.** Auto-laid-out Mermaid diagrams come out cramped and hard to read as a whole. Hand-placed SVG lets you control layout, spacing, emphasis and animation. Use Mermaid only if the user explicitly asks for it.
 
 ## Choosing a visual
 
-| Content in the video | Best visual |
+| Content | Visual |
 |---|---|
-| Overall map of a topic, how its parts relate | `mindmap` or `flowchart TD` (Big picture) |
-| A process, pipeline or algorithm's steps | `flowchart LR` / `TD` |
-| Components talking to each other over time (request/response, protocols) | `sequenceDiagram` |
-| Something with states and transitions (lifecycle, TCP, circuit breaker) | `stateDiagram-v2` |
-| Architecture: services, stores, queues | `flowchart LR` with `subgraph`s per layer or zone |
-| Decision guide ("which DB should I use?") | `flowchart TD` with diamond decisions |
-| Classes, data models, relationships | `classDiagram` / `erDiagram` |
-| History, phases, evolution | `timeline` |
-| Comparing options on criteria | a **markdown table** (not a diagram) |
-| Two-axis positioning (cost vs. latency) | `quadrantChart` |
-| Numbers, proportions | table first; `pie` only for a few parts of a whole |
-| Something that moves or changes step by step | an **interactive HTML** walkthrough (see interactive-html.md) |
+| The parts of a topic and how they relate | Cards grid (HTML) or a hub-and-spoke / layered SVG |
+| A process, pipeline or algorithm | Left-to-right flow SVG; a **stepper** if it unfolds in stages |
+| Components talking over time (requests, protocols) | Swim-lane / sequence SVG, or a stepper with moving arrows |
+| States and transitions | State SVG (rounded boxes, labelled arrows) |
+| Architecture (services, stores, queues) | Layered SVG with grouped zones |
+| Before vs after, option A vs B | **Compare** toggle (HTML) or side-by-side SVG |
+| A decision ("which DB?") | Decision-tree SVG with diamond questions |
+| Numbers, proportions, trends | Simple SVG bar or line chart with labelled values, or a table |
+| Data structures (arrays, rings, trees, memory) | Precise SVG drawing; animate changes with a stepper |
+| Something that moves | CSS-animated flow (`.flow`) or SMIL `animateMotion` dots |
 
-Aim for 3–6 diagrams in a deep note: a Big picture plus one per major mechanism. Don't add a diagram that just restates a list.
+A typical note has a big-picture visual on the Overview tab and one visual for most key ideas. Skip a visual that just restates a list.
 
-## Obsidian-safe Mermaid rules
+## Drawing good SVG
 
-Obsidian ships its own Mermaid version, which is often behind the latest. Breaking these rules gives "Syntax error" in the note.
+- **Canvas**: use `viewBox` (e.g. `0 0 800 300`) with `width:100%`. Plan positions on a grid (multiples of 20). Leave 20px margins.
+- **Readable text**: labels 14–16px, secondary text 12–13px, never smaller. Keep labels short (2–4 words) and put the detail in the caption or text.
+- **Space**: boxes at least 140×56, and at least 40px gaps between boxes. If it feels cramped, widen the `viewBox` or split it into two figures.
+- **Emphasis**: highlight the one or two things the figure is about. Leave everything else neutral.
+- **Arrows**: define one `<marker>` per SVG with a unique id (`arr-1`, `arr-2`…). Ids must be unique across the whole page.
+- **Captions**: one sentence on how to read the figure.
+- **Accuracy**: draw what the video describes, using its own example values where it gives them.
 
-1. **Stick to stable diagram types**: flowchart, sequenceDiagram, classDiagram, stateDiagram-v2, erDiagram, gantt, pie, mindmap, timeline, quadrantChart, gitGraph. Avoid `block-beta`, `architecture-beta`, `packet-beta`, `kanban` and other `-beta` types.
-2. **Quote labels that have punctuation**: `A["Load balancer (L7)"]`, `B{"Cache hit?"}`. Parentheses, colons, commas, `#`, `&`, quotes and slashes inside unquoted labels break parsing. For a literal quote inside a label, use `#quot;`.
-3. **Simple node IDs**: letters, digits and underscores only (`api_gw`, not `api-gw` or `API GW`). Never use `end` as an ID, and don't start one with `o` or `x` right after `---` (`A---oB` draws a circle).
-4. **Line breaks** inside labels: `<br>`. No other HTML, and no markdown inside labels.
-5. **Edge labels**: `A -->|"writes"| B`.
-6. **Subgraphs**: `subgraph data["Data layer"]` … `end`.
-7. **Keep it small**: about 12–15 nodes max. Split big pictures into an overview plus detail diagrams.
-8. **Don't hard-code colours that only work on one theme.** If you emphasise something, use one `classDef` with a mid-tone fill that reads on light and dark, e.g.
-   `classDef key fill:#4f7cff33,stroke:#4f7cff,stroke-width:2px` then `class cache key`.
-9. **No `click` handlers** and no `%%{init}%%` theme overrides, so the user's Obsidian theme applies.
-10. **mindmap**: indentation defines the tree. Use plain text nodes, quoted with `["..."]` if they have punctuation.
+### In HTML notes (the template's classes)
 
-## Patterns
+| Class | Use |
+|---|---|
+| `box`, `box soft`, `box hl` (or `<g class="hl">`) | Rectangles: neutral, subtle fill, highlighted |
+| `lbl`, `sub` | Centred label and secondary text |
+| `edge`, `edge hl` | Connector lines and highlighted connectors |
+| `flow` | Animated dashes along a path (data moving) |
+| `c-blue` … `c-green` + `fill-c` / `stroke-c` | Accent colours that adapt to light and dark themes |
 
-**Big picture (mindmap)**
-```mermaid
-mindmap
-  root((Consistent hashing))
-    Problem
-      ["mod-N remaps most keys"]
-    Hash ring
-      Servers placed by hash
-      Keys go clockwise
-    Virtual nodes
-      Even load
-      Smooth rebalancing
-    Used in
-      DynamoDB
-      Cassandra
-      CDNs
+Wrap each figure in `<figure class="figure">…<figcaption>`. It gets an **Expand** button automatically for a full-screen view.
+
+**Animation options**, from simplest to richest:
+1. `class="edge flow"`: marching dashes. Shows direction or data moving.
+2. SMIL, which needs no JavaScript: a dot travelling along a path:
+   ```html
+   <circle r="6" class="fill-c c-teal"><animateMotion dur="2.5s" repeatCount="indefinite" path="M200,100 L600,100"/></circle>
+   ```
+3. **Stepper**: a scene where elements appear or highlight step by step, with Prev / Play / Next controls. See `html-notes.md`.
+4. Custom script: only when the idea really needs it (e.g. a slider that changes a parameter and redraws). Attach events with `addEventListener`; see the HTML Viewer rules in `html-notes.md`.
+
+Respect `prefers-reduced-motion`; the template's CSS already does this for `.flow`.
+
+### In markdown notes (inline SVG)
+
+Paste the `<svg>…</svg>` straight into the markdown. Obsidian renders inline SVG in reading view.
+
+- **No blank lines inside the SVG.** A blank line ends the HTML block and the rest shows as raw text.
+- **No CSS classes, `<style>` or scripts.** Obsidian doesn't load the template's styles and strips scripts. Put attributes on each element: `fill`, `stroke`, `stroke-width`, `font-size`, `text-anchor`.
+- **Theme-safe colours**: use `currentColor` for text and neutral lines so they follow Obsidian's light and dark themes. Use mid-tone accents with partial opacity for fills (`fill="#4f7cff" fill-opacity="0.15"`, `stroke="#4f7cff"`).
+- Keep each SVG under ~12 elements per idea, and add a one-line italic caption below.
+- SMIL `animateMotion` usually still runs in Obsidian, so simple motion is possible.
+
+Example:
+
+```html
+<svg viewBox="0 0 640 140" width="100%" role="img" aria-label="Request flows from client to server to database">
+  <defs><marker id="m-arr-1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>
+  <rect x="20" y="40" width="160" height="60" rx="10" fill="none" stroke="currentColor" stroke-opacity="0.5"/>
+  <text x="100" y="75" text-anchor="middle" font-size="15" fill="currentColor">Client</text>
+  <rect x="240" y="40" width="160" height="60" rx="10" fill="#4f7cff" fill-opacity="0.15" stroke="#4f7cff" stroke-width="2"/>
+  <text x="320" y="75" text-anchor="middle" font-size="15" fill="currentColor">Server</text>
+  <rect x="460" y="40" width="160" height="60" rx="10" fill="none" stroke="currentColor" stroke-opacity="0.5"/>
+  <text x="540" y="75" text-anchor="middle" font-size="15" fill="currentColor">Database</text>
+  <path d="M180,70 L236,70" stroke="currentColor" stroke-width="2" marker-end="url(#m-arr-1)"/>
+  <path d="M400,70 L456,70" stroke="currentColor" stroke-width="2" marker-end="url(#m-arr-1)"/>
+</svg>
 ```
+*The server sits between the client and the database.*
 
-**Process (flowchart)**
-```mermaid
-flowchart LR
-  req["Request for key K"] --> h["hash(K)"]
-  h --> ring{"Next server<br>clockwise?"}
-  ring -->|"found"| s["Server B owns K"]
-  classDef key fill:#4f7cff33,stroke:#4f7cff,stroke-width:2px
-  class s key
-```
+The user's Obsidian setup also renders HTML snippets in markdown, so small HTML blocks (a styled table, a details/summary toggle) are fine too. Keep them script-free.
 
-**Interaction over time (sequence)**
-```mermaid
-sequenceDiagram
-  participant C as Client
-  participant A as App
-  participant R as Cache
-  participant D as Database
-  C->>A: GET /user/42
-  A->>R: get user:42
-  R-->>A: miss
-  A->>D: SELECT ... WHERE id=42
-  D-->>A: row
-  A->>R: set user:42 (TTL 5m)
-  A-->>C: 200 OK
-```
-
-**States**
-```mermaid
-stateDiagram-v2
-  [*] --> Closed
-  Closed --> Open: failures over threshold
-  Open --> HalfOpen: timeout expires
-  HalfOpen --> Closed: trial request succeeds
-  HalfOpen --> Open: trial request fails
-```
-
-**Decision guide**
-```mermaid
-flowchart TD
-  q1{"Need strong consistency?"} -->|"yes"| sql["Relational DB"]
-  q1 -->|"no"| q2{"Mostly key lookups?"}
-  q2 -->|"yes"| kv["Key-value store"]
-  q2 -->|"no"| doc["Document store"]
-```
-
-## Other visual patterns that work well in markdown
+## Other visual patterns
 
 - **Comparison tables** with a final "Choose when…" row.
-- **Before / after** pairs: two small code blocks or diagrams showing the change.
-- **Annotated code**: a short block followed by numbered explanations (`1.` maps to line X).
-- **ASCII sketches** for things Mermaid can't draw well (memory layouts, arrays, bit fields), inside a plain ``` block:
-  ```
-  index:  0   1   2   3   4
-  heap : [9] [7] [8] [3] [5]
-  ```
-- **Callouts** for emphasis: `> [!tip]`, `> [!warning]`, `> [!example]`, `> [!question]` (for "think about it" prompts, used sparingly).
-- **Formula blocks** with LaTeX (`$$ ... $$`), which Obsidian renders.
+- **Annotated code**: a short block followed by numbered explanations.
+- **Callouts** for the one insight, warning or tip that matters.
+- **Formulas** in LaTeX (`$$ … $$` in markdown). In HTML, write simple formulas with `<code>` or plain text.

@@ -36,8 +36,13 @@ DEFAULTS = {
     # desktop chat), where files are uploaded with the Google Drive connector.
     # Should be the Drive-side twin of notes_root.
     "drive_root": "YouTubeNotes",
+    # How yt-notes writes notes: "html" (default) = a rich single-page note with
+    # tabs, illustrations and animations, plus a small markdown card for
+    # Obsidian search; "markdown" = an Obsidian markdown note with inline SVG.
+    "note_format": "html",
     # Optional: absolute path of the Obsidian vault that contains notes_root.
-    # When set, notes get an inline `html-embed` block for interactive files.
+    # Usually not needed: it is found automatically by looking for a .obsidian
+    # folder above notes_root.
     "obsidian_vault_root": "",
     # Preferred transcript languages, in order.
     "languages": ["en"],
@@ -206,6 +211,22 @@ def safe_name(text: str, max_len: int = 80) -> str:
         text = cut if len(cut) > max_len * 0.6 else text[:max_len]
         text = text.strip("._-")
     return text or "Untitled"
+
+
+def find_vault_root(start: Path, explicit: str = "") -> Path | None:
+    """The Obsidian vault containing `start`: explicit setting, else the nearest
+    folder (start or above) that has a .obsidian directory."""
+    if explicit:
+        p = Path(os.path.expandvars(explicit)).expanduser()
+        return p if p.exists() else None
+    try:
+        cur = start.expanduser().resolve()
+    except OSError:
+        return None
+    for d in [cur, *cur.parents]:
+        if (d / ".obsidian").is_dir():
+            return d
+    return None
 
 
 def display_name(name: str) -> str:

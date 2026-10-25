@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- REPLACE: note title -->
+<title>Note title</title>
+<!--
+  yt-notes HTML note template.
+
+  Works in Obsidian's "HTML Viewer" plugin and any browser:
+  - Self-contained: no CDN scripts, fonts or network calls.
+  - No inline event handlers (onclick=…) and no javascript: URLs; HTML Viewer
+    strips them. All behaviour is attached in the <script> at the bottom.
+  - Navigation stays inside the page (#anchors). The viewer blocks links that
+    leave the page, so there are no links to other notes here; those live in
+    the markdown card next to this file.
+  - Without JavaScript every tab panel is shown one after another and the tab
+    bar works as a table of contents.
+
+  How to fill it in: replace everything marked REPLACE, delete every block
+  marked data-example (the checker fails if any remain), and keep the CSS and
+  engine script as they are. Components are documented in
+  references/html-notes.md.
+-->
+<style>
+  :root {
+    --bg: #f6f6f3; --surface: #ffffff; --ink: #16181d; --muted: #5f636b; --line: #dfdcd5;
+    --soft: #eceae4; --accent: #2b59c3; --accent-soft: #e4ebfa;
+    --blue: #2b59c3; --orange: #c46a1b; --teal: #23807a; --purple: #7b3fa0; --red: #c0392b; --green: #2e8b57;
+    --code-bg: #f1efe9; --shadow: 0 1px 2px rgba(0,0,0,.05), 0 6px 20px rgba(0,0,0,.05);
+    --radius: 14px; --maxw: 1080px;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141518; --surface: #1d1f23; --ink: #ecebe7; --muted: #a3a29d; --line: #34363c;
+      --soft: #26282d; --accent: #7fa2ff; --accent-soft: #24304b;
+      --blue: #7fa2ff; --orange: #f0a35e; --teal: #5fc7bf; --purple: #c595ea; --red: #f08273; --green: #6fd19c;
+      --code-bg: #24262b; --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 84px; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 17px/1.6 var(--sans); }
+  a { color: var(--accent); }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 40px 32px 96px; }
+
+  /* Header */
+  .kicker { font: 600 13px/1.4 var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  h1 { font-size: clamp(2.2rem, 4vw, 3.4rem); line-height: 1.08; letter-spacing: -.02em; margin: 0 0 16px; }
+  .lede { font-size: 1.2rem; color: var(--muted); max-width: 62ch; margin: 0 0 18px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 26px; padding: 0; list-style: none; }
+  .meta li { font: 13px/1.2 var(--mono); padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); }
+
+  /* Tabs (anchor links: work as a table of contents without JS) */
+  .tabs { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 10px; padding: 14px 0;
+          background: var(--bg); border-bottom: 1px solid var(--line); margin-bottom: 30px; }
+  .tab { font-weight: 700; font-size: 15px; text-decoration: none; color: var(--ink); padding: 10px 18px;
+         border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+  .tab:hover { border-color: var(--accent); }
+  .tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .tab:focus-visible, button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  /* Panels: all visible without JS; one at a time with JS */
+  .panel { margin-bottom: 56px; }
+  .js .panel { display: none; }
+  .js .panel.active { display: block; animation: fade .25s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  h2 { font-size: 1.9rem; letter-spacing: -.01em; margin: 0 0 14px; }
+  h3 { font-size: 1.3rem; margin: 34px 0 10px; }
+  p, li { max-width: 72ch; }
+  .minitoc { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 18px; }
+  .minitoc a { font-size: 13px; text-decoration: none; padding: 4px 10px; border-radius: 999px; background: var(--soft); color: var(--ink); }
+
+  /* TL;DR */
+  .tldr { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 24px; box-shadow: var(--shadow); }
+  .tldr h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin: 0 0 6px; }
+  .tldr ul { margin: 0; padding-left: 1.2em; }
+  .tldr li { margin: 6px 0; }
+
+  /* Cards: <div class="card" style="--c: var(--teal)"> */
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 18px 0; }
+  .card { --c: var(--accent); background: var(--surface); border: 1px solid var(--line); border-top: 5px solid var(--c);
+          border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+  .card-head { padding: 14px 18px 10px; border-bottom: 1px solid var(--line); }
+  .card-head strong { display: block; font-size: 1.15rem; }
+  .card-head span { color: var(--muted); font-size: 14px; }
+  .card-body { padding: 12px 18px 16px; font-size: 15.5px; }
+  .card-body p { margin: 0 0 10px; }
+  .pill { display: inline-block; font: 13px/1.2 var(--mono); color: var(--c, var(--accent)); border: 1.5px solid currentColor;
+          border-radius: 999px; padding: 3px 10px; }
+
+  /* Callouts */
+  .callout { border-left: 5px solid var(--accent); background: var(--accent-soft); border-radius: 0 12px 12px 0;
+             padding: 14px 20px; margin: 20px 0; }
+  .callout.warn { border-color: var(--orange); background: color-mix(in srgb, var(--orange) 14%, var(--surface)); }
+  .callout.added { border-color: var(--purple); background: color-mix(in srgb, var(--purple) 12%, var(--surface)); }
+  .callout .label { display: block; font: 700 12px/1.4 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .callout p { margin: 0; }
+
+  /* Figures: inline SVG illustrations, click "Expand" to zoom */
+  .figure { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px; margin: 20px 0; box-shadow: var(--shadow); position: relative; }
+  .figure svg { width: 100%; height: auto; display: block; }
+  .figure figcaption { color: var(--muted); font-size: 14.5px; margin-top: 10px; }
+  .expand { position: absolute; top: 10px; right: 10px; font: 600 12px var(--sans); padding: 5px 10px; border-radius: 8px;
+            border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; }
+  .lightbox { position: fixed; inset: 0; z-index: 50; background: rgba(10,10,12,.72); display: none; align-items: center; justify-content: center; padding: 3vw; }
+  .lightbox.open { display: flex; }
+  .lightbox .inner { background: var(--surface); border-radius: var(--radius); padding: 24px; width: min(96vw, 1500px); max-height: 94vh; overflow: auto; }
+  .lightbox svg { width: 100%; height: auto; }
+  .lightbox .close { float: right; }
+
+  /* SVG drawing classes (use inside figures) */
+  .box { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+  .box.soft { fill: var(--soft); }
+  .box.hl, .hl .box { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2.5; }
+  .lbl { fill: var(--ink); font: 600 15px var(--sans); text-anchor: middle; dominant-baseline: middle; }
+  .sub { fill: var(--muted); font: 13px var(--sans); text-anchor: middle; dominant-baseline: middle; }
+  .edge { stroke: var(--muted); stroke-width: 2; fill: none; }
+  .edge.hl { stroke: var(--accent); stroke-width: 3; }
+  .flow { stroke-dasharray: 8 7; animation: dash 1s linear infinite; }
+  @keyframes dash { to { stroke-dashoffset: -30; } }
+  .c-blue { --c: var(--blue); } .c-orange { --c: var(--orange); } .c-teal { --c: var(--teal); }
+  .c-purple { --c: var(--purple); } .c-red { --c: var(--red); } .c-green { --c: var(--green); }
+  .fill-c { fill: var(--c); } .stroke-c { stroke: var(--c); }
+  @media (prefers-reduced-motion: reduce) { .flow { animation: none; } }
+
+  /* Stepper: an SVG scene + <ol class="steps">; JS adds controls */
+  .stepper .el { opacity: 0; transition: opacity .35s ease; }
+  .stepper .el.on { opacity: 1; }
+  .stepper .dim { opacity: .25; transition: opacity .35s ease; }
+  .no-js .stepper .el, html:not(.js) .stepper .el { opacity: 1; }
+  .steps { margin: 12px 0 0; }
+  .js .steps { display: none; }
+  .step-caption { min-height: 64px; margin-top: 12px; }
+  .step-caption strong { display: block; }
+  .controls { display: flex; gap: 8px; align-items: center; margin-top: 12px; flex-wrap: wrap; }
+  .controls button, .toggle button { font: 600 14px var(--sans); padding: 7px 14px; border-radius: 9px; border: 1px solid var(--line);
+                                      background: var(--surface); color: var(--ink); cursor: pointer; }
+  .controls button:hover, .toggle button:hover { border-color: var(--accent); }
+  .controls button:disabled { opacity: .4; cursor: default; }
+  .controls .count { margin-left: auto; color: var(--muted); font: 13px var(--mono); }
+
+  /* Compare: two panes; JS turns them into a toggle */
+  .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 20px 0; }
+  .compare-pane h4 { margin: 0 0 8px; }
+  .compare-pane svg { width: 100%; max-width: 520px; height: auto; display: block; margin: 0 auto; }
+  .js .compare { display: block; }
+  .js .compare-pane { display: none; }
+  .js .compare-pane.active { display: block; }
+  .toggle { display: inline-flex; gap: 6px; margin-bottom: 10px; }
+  .toggle button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  /* Tables, code, lists */
+  table { border-collapse: collapse; width: 100%; margin: 18px 0; background: var(--surface); border-radius: 12px; overflow: hidden; font-size: 15.5px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 10px 14px; text-align: left; vertical-align: top; }
+  th { background: var(--soft); font-size: 14px; }
+  code { font: 0.9em var(--mono); background: var(--code-bg); padding: 1px 6px; border-radius: 6px; }
+  pre { background: var(--code-bg); padding: 16px 18px; border-radius: 12px; overflow: auto; font-size: 14px; line-height: 1.5; }
+  pre code { background: none; padding: 0; }
+  .takeaways { list-style: none; padding: 0; counter-reset: k; }
+  .takeaways li { counter-increment: k; position: relative; padding: 12px 16px 12px 52px; margin: 10px 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  .takeaways li::before { content: counter(k); position: absolute; left: 14px; top: 11px; width: 26px; height: 26px; border-radius: 50%;
+                          background: var(--accent); color: var(--surface); font: 700 14px/26px var(--sans); text-align: center; }
+
+  /* Floating nav buttons (anchors, so they work without JS) */
+  .fab { position: fixed; right: 22px; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
+         background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); color: var(--ink); text-decoration: none; z-index: 30; }
+  .fab:hover { border-color: var(--accent); color: var(--accent); }
+  .fab svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .fab.home { bottom: 78px; }
+  .fab.top { bottom: 24px; }
+  footer { color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); margin-top: 40px; padding-top: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap" id="page-top">
+
+  <header>
+    <!-- REPLACE: kicker (topic · channel), title, one-paragraph summary, meta pills -->
+    <p class="kicker">Topic · Channel</p>
+    <h1>Note title</h1>
+    <p class="lede">One or two sentences that say what this topic is and why it matters, in plain words.</p>
+    <ul class="meta">
+      <li>video: <a href="https://www.youtube.com/watch?v=VIDEO_ID">youtube.com/watch?v=VIDEO_ID</a></li>
+      <li>12:34</li>
+      <li>published 2026-01-01</li>
+      <li>transcript: manual captions</li>
+    </ul>
+  </header>
+
+  <!-- REPLACE: one tab per panel below, same ids, in the same order. 3–7 tabs. -->
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <a class="tab" href="#overview" role="tab">Overview</a>
+    <a class="tab" href="#key-ideas" role="tab">Key ideas</a>
+    <a class="tab" href="#walkthrough" role="tab">Walkthrough</a>
+    <a class="tab" href="#takeaways" role="tab">Takeaways</a>
+    <a class="tab" href="#source" role="tab">Source</a>
+  </nav>
+
+  <main>
+    <section class="panel" id="overview" role="tabpanel">
+      <div class="tldr">
+        <h2>TL;DR</h2>
+        <ul>
+          <!-- REPLACE: 3–5 bullets a reader could recite -->
+          <li>First key point, stated as a complete idea.</li>
+          <li>Second key point.</li>
+          <li>Third key point.</li>
+        </ul>
+      </div>
+
+      <h2 style="margin-top:32px">The big picture</h2>
+      <p>REPLACE: two or three sentences that walk through the overview figure.</p>
+
+      <!-- EXAMPLE: cards. Delete or replace (keep the structure). -->
+      <div class="cards" data-example>
+        <div class="card c-blue">
+          <div class="card-head"><strong>Part one</strong><span>what it is</span></div>
+          <div class="card-body"><p>Short explanation.</p><span class="pill">a label</span></div>
+        </div>
+        <div class="card c-orange">
+          <div class="card-head"><strong>Part two</strong><span>what it is</span></div>
+          <div class="card-body"><p>Short explanation.</p><span class="pill">a label</span></div>
+        </div>
+        <div class="card c-teal">
+          <div class="card-head"><strong>Part three</strong><span>what it is</span></div>
+          <div class="card-body"><p>Short explanation.</p><span class="pill">a label</span></div>
+        </div>
+      </div>
+
+      <div class="callout">
+        <span class="label">Key insight</span>
+        <p>REPLACE: the one idea that makes the rest click.</p>
+      </div>
+    </section>
+
+    <section class="panel" id="key-ideas" role="tabpanel">
+      <h2>Key ideas</h2>
+      <!-- REPLACE: 3–7 ideas, each an h3 + a short explanation + a figure or example where it helps.
+           Panels with 3+ h3s get clickable chips at the top automatically. -->
+      <h3 id="idea-1">First idea</h3>
+      <p>Short explanation: intuition first, then the precise point.</p>
+
+      <!-- EXAMPLE: a figure with an inline SVG. Delete or replace. -->
+      <figure class="figure" data-example>
+        <svg viewBox="0 0 800 200" role="img" aria-label="Three boxes connected left to right">
+          <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" style="color:var(--muted)"/></marker></defs>
+          <g><rect class="box" x="20" y="60" width="200" height="80" rx="12"/><text class="lbl" x="120" y="92">Input</text><text class="sub" x="120" y="116">what goes in</text></g>
+          <g class="hl"><rect class="box" x="300" y="60" width="200" height="80" rx="12"/><text class="lbl" x="400" y="92">Process</text><text class="sub" x="400" y="116">the key step</text></g>
+          <g><rect class="box" x="580" y="60" width="200" height="80" rx="12"/><text class="lbl" x="680" y="92">Output</text><text class="sub" x="680" y="116">what comes out</text></g>
+          <path class="edge flow" d="M220,100 L298,100" marker-end="url(#arr)"/>
+          <path class="edge" d="M500,100 L578,100" marker-end="url(#arr)"/>
+        </svg>
+        <figcaption>How to read it: one sentence.</figcaption>
+      </figure>
+
+      <h3 id="idea-2">Second idea</h3>
+      <p>Short explanation.</p>
+
+      <!-- EXAMPLE: compare (before/after or option A/B). Delete or replace. -->
+      <div class="compare" data-example>
+        <div class="compare-pane" data-label="Before"><h4>Before</h4><p>How it works without the idea.</p></div>
+        <div class="compare-pane" data-label="After"><h4>After</h4><p>How it works with it.</p></div>
+      </div>
+
+      <h3 id="idea-3">Third idea</h3>
+      <p>Short explanation.</p>
+      <div class="callout added">
+        <span class="label">Added context (not from the video)</span>
+        <p>Use this callout for anything you add beyond what the speaker said.</p>
+      </div>
+    </section>
+
+    <section class="panel" id="walkthrough" role="tabpanel">
+      <h2>Walkthrough</h2>
+      <p>REPLACE: one sentence on what the animation shows. Remove this tab if the video has no process worth stepping through.</p>
+
+      <!-- EXAMPLE: stepper. The SVG holds every element once; elements with class "el" appear only in
+           the steps that list them in data-show. data-hl highlights, data-flow animates an edge, data-dim fades.
+           Delete or replace. -->
+      <div class="figure stepper" data-example>
+        <svg viewBox="0 0 800 220" role="img" aria-label="A request moving through three stages">
+          <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor" style="color:var(--muted)"/></marker></defs>
+          <g id="s-a"><rect class="box" x="20" y="70" width="180" height="80" rx="12"/><text class="lbl" x="110" y="110">Client</text></g>
+          <g id="s-b"><rect class="box" x="310" y="70" width="180" height="80" rx="12"/><text class="lbl" x="400" y="110">Server</text></g>
+          <g id="s-c"><rect class="box" x="600" y="70" width="180" height="80" rx="12"/><text class="lbl" x="690" y="110">Database</text></g>
+          <path id="e-ab" class="el edge" d="M200,100 L308,100" marker-end="url(#arr2)"/>
+          <path id="e-bc" class="el edge" d="M490,100 L598,100" marker-end="url(#arr2)"/>
+          <path id="e-back" class="el edge" d="M598,125 C500,190 300,190 202,125" marker-end="url(#arr2)"/>
+        </svg>
+        <ol class="steps">
+          <li data-show="e-ab" data-hl="s-a s-b" data-flow="e-ab"><strong>1 · Request</strong> The client sends a request to the server.</li>
+          <li data-show="e-ab e-bc" data-hl="s-c" data-flow="e-bc" data-dim="s-a"><strong>2 · Lookup</strong> The server asks the database.</li>
+          <li data-show="e-back" data-hl="s-a" data-flow="e-back"><strong>3 · Response</strong> The answer travels back to the client.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="panel" id="takeaways" role="tabpanel">
+      <h2>Takeaways</h2>
+      <!-- REPLACE: the few ideas worth remembering, phrased as rules of thumb; fold pitfalls in here -->
+      <ol class="takeaways">
+        <li>First takeaway.</li>
+        <li>Second takeaway.</li>
+        <li><strong>Pitfall:</strong> a common mistake and how to avoid it.</li>
+      </ol>
+    </section>
+
+    <section class="panel" id="source" role="tabpanel">
+      <h2>Source</h2>
+      <!-- REPLACE: video details. Links that leave the page may not open inside Obsidian's HTML Viewer;
+           the markdown card next to this file has clickable links. -->
+      <table>
+        <tr><th>Video</th><td><a href="https://www.youtube.com/watch?v=VIDEO_ID">Original video title</a></td></tr>
+        <tr><th>Channel</th><td>Channel name</td></tr>
+        <tr><th>Published</th><td>2026-01-01 · 12:34</td></tr>
+        <tr><th>Transcript</th><td>manual captions (yt-dlp)</td></tr>
+        <tr><th>Links from the description</th><td>Paper, docs…</td></tr>
+      </table>
+    </section>
+  </main>
+
+  <footer>Generated by yt-notes · REPLACE: created date</footer>
+</div>
+
+<!-- Floating navigation: home = first tab, top = top of page. Anchors, so they work without JS. -->
+<a class="fab home" href="#overview" aria-label="Home (first tab)" title="Home">
+  <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+</a>
+<a class="fab top" href="#page-top" aria-label="Back to top" title="Back to top">
+  <svg viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>
+</a>
+
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Expanded figure">
+  <div class="inner"><button type="button" class="close" id="lightbox-close">Close ✕</button><div id="lightbox-body"></div></div>
+</div>
+
+<script>
+/* ---- note engine (keep as is) ---------------------------------------------
+   Everything is attached with addEventListener because Obsidian's HTML Viewer
+   strips inline handlers. Tabs follow the URL hash, so #key-ideas deep-links. */
+(function () {
+  "use strict";
+  var root = document.documentElement;
+  root.classList.add("js");
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".tab"));
+  var panels = Array.prototype.slice.call(document.querySelectorAll(".panel"));
+  var firstId = panels.length ? panels[0].id : "";
+
+  function panelFor(id) {
+    if (!id) return null;
+    var el = document.getElementById(id);
+    if (!el) return null;
+    return el.classList.contains("panel") ? el : el.closest(".panel");
+  }
+  function show(id, scrollTarget) {
+    var panel = panelFor(id) || panelFor(firstId);
+    if (!panel) return;
+    panels.forEach(function (p) { p.classList.toggle("active", p === panel); });
+    tabs.forEach(function (t) {
+      var on = t.getAttribute("href") === "#" + panel.id;
+      t.setAttribute("aria-selected", on ? "true" : "false");
+      t.setAttribute("tabindex", on ? "0" : "-1");
+    });
+    var target = scrollTarget || null;
+    if (target && target !== panel) { target.scrollIntoView(); }
+    else if (scrollTarget === null) { window.scrollTo(0, 0); }
+  }
+  function fromHash() {
+    var id = decodeURIComponent((location.hash || "").slice(1));
+    if (id === "page-top") return;
+    var el = id ? document.getElementById(id) : null;
+    show(id || firstId, el && !el.classList.contains("panel") ? el : undefined);
+  }
+  tabs.forEach(function (t, i) {
+    t.addEventListener("click", function (e) {
+      e.preventDefault();
+      var id = t.getAttribute("href").slice(1);
+      history.replaceState(null, "", "#" + id);
+      show(id);
+    });
+    t.addEventListener("keydown", function (e) {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      e.preventDefault();
+      var next = tabs[(i + (e.key === "ArrowRight" ? 1 : tabs.length - 1)) % tabs.length];
+      next.focus(); next.click();
+    });
+  });
+  window.addEventListener("hashchange", fromHash);
+
+  // Home button: first tab and top of page. Top button: top of page.
+  var home = document.querySelector(".fab.home");
+  if (home) home.addEventListener("click", function (e) {
+    e.preventDefault(); history.replaceState(null, "", "#" + firstId); show(firstId, null);
+  });
+  var top = document.querySelector(".fab.top");
+  if (top) top.addEventListener("click", function (e) { e.preventDefault(); window.scrollTo(0, 0); });
+
+  // Mini table of contents for panels with 3+ subheadings.
+  panels.forEach(function (p) {
+    var hs = p.querySelectorAll("h3[id]");
+    if (hs.length < 3) return;
+    var nav = document.createElement("nav");
+    nav.className = "minitoc";
+    nav.setAttribute("aria-label", "In this section");
+    Array.prototype.forEach.call(hs, function (h) {
+      var a = document.createElement("a");
+      a.href = "#" + h.id; a.textContent = h.textContent;
+      a.addEventListener("click", function (e) { e.preventDefault(); h.scrollIntoView(); });
+      nav.appendChild(a);
+    });
+    var h2 = p.querySelector("h2");
+    if (h2) h2.insertAdjacentElement("afterend", nav); else p.insertBefore(nav, p.firstChild);
+  });
+
+  // Expandable figures (lightbox).
+  var lb = document.getElementById("lightbox"), lbBody = document.getElementById("lightbox-body");
+  function closeLb() { lb.classList.remove("open"); lbBody.innerHTML = ""; }
+  Array.prototype.forEach.call(document.querySelectorAll(".figure"), function (fig) {
+    var svg = fig.querySelector("svg");
+    if (!svg || fig.classList.contains("stepper")) return;
+    var b = document.createElement("button");
+    b.type = "button"; b.className = "expand"; b.textContent = "Expand";
+    b.addEventListener("click", function () {
+      var clone = svg.cloneNode(true);
+      Array.prototype.forEach.call(clone.querySelectorAll("[id]"), function (n) { n.removeAttribute("id"); });
+      lbBody.appendChild(clone); lb.classList.add("open");
+    });
+    fig.appendChild(b);
+  });
+  if (lb) {
+    document.getElementById("lightbox-close").addEventListener("click", closeLb);
+    lb.addEventListener("click", function (e) { if (e.target === lb) closeLb(); });
+    document.addEventListener("keydown", function (e) { if (e.key === "Escape") closeLb(); });
+  }
+
+  // Compare panes -> toggle.
+  Array.prototype.forEach.call(document.querySelectorAll(".compare"), function (cmp) {
+    var panes = cmp.querySelectorAll(".compare-pane");
+    if (panes.length < 2) return;
+    var bar = document.createElement("div"); bar.className = "toggle"; bar.setAttribute("role", "group");
+    var buttons = [];
+    Array.prototype.forEach.call(panes, function (pane, i) {
+      var b = document.createElement("button"); b.type = "button";
+      b.textContent = pane.getAttribute("data-label") || ("Option " + (i + 1));
+      b.addEventListener("click", function () {
+        Array.prototype.forEach.call(panes, function (q, j) { q.classList.toggle("active", i === j); });
+        buttons.forEach(function (x, j) { x.setAttribute("aria-pressed", i === j ? "true" : "false"); });
+      });
+      buttons.push(b); bar.appendChild(b);
+    });
+    cmp.insertBefore(bar, cmp.firstChild);
+    buttons[0].click();
+  });
+
+  // Steppers.
+  Array.prototype.forEach.call(document.querySelectorAll(".stepper"), function (st) {
+    var steps = Array.prototype.slice.call(st.querySelectorAll(".steps > li"));
+    if (!steps.length) return;
+    var svg = st.querySelector("svg");
+    var els = svg ? Array.prototype.slice.call(svg.querySelectorAll(".el")) : [];
+    var cap = document.createElement("div"); cap.className = "step-caption"; cap.setAttribute("aria-live", "polite");
+    var bar = document.createElement("div"); bar.className = "controls";
+    function mk(label, aria) { var b = document.createElement("button"); b.type = "button"; b.textContent = label; b.setAttribute("aria-label", aria); bar.appendChild(b); return b; }
+    var prev = mk("◀ Prev", "Previous step"), play = mk("▶ Play", "Play or pause"), next = mk("Next ▶", "Next step"), reset = mk("↺", "Restart");
+    var count = document.createElement("span"); count.className = "count"; bar.appendChild(count);
+    st.appendChild(cap); st.appendChild(bar);
+    var i = 0, timer = null;
+    function ids(li, attr) { return (li.getAttribute(attr) || "").split(/\s+/).filter(Boolean); }
+    function setClass(list, cls) {
+      Array.prototype.forEach.call(svg.querySelectorAll("." + cls), function (n) { n.classList.remove(cls); });
+      list.forEach(function (id) { var n = svg.querySelector("#" + CSS.escape(id)); if (n) n.classList.add(cls); });
+    }
+    function go(k) {
+      i = Math.max(0, Math.min(steps.length - 1, k));
+      var li = steps[i], showSet = ids(li, "data-show");
+      els.forEach(function (n) { n.classList.toggle("on", showSet.indexOf(n.id) >= 0); });
+      setClass(ids(li, "data-hl"), "hl"); setClass(ids(li, "data-flow"), "flow"); setClass(ids(li, "data-dim"), "dim");
+      cap.innerHTML = li.innerHTML;
+      prev.disabled = i === 0; next.disabled = i === steps.length - 1;
+      count.textContent = (i + 1) + " / " + steps.length;
+    }
+    function stop() { if (timer) { clearInterval(timer); timer = null; play.textContent = "▶ Play"; } }
+    prev.addEventListener("click", function () { stop(); go(i - 1); });
+    next.addEventListener("click", function () { stop(); go(i + 1); });
+    reset.addEventListener("click", function () { stop(); go(0); });
+    play.addEventListener("click", function () {
+      if (timer) return stop();
+      if (i === steps.length - 1) go(0);
+      play.textContent = "❚❚ Pause";
+      timer = setInterval(function () { if (i >= steps.length - 1) stop(); else go(i + 1); }, 2600);
+    });
+    go(0);
+  });
+
+  fromHash();
+})();
+</script>
+</body>
+</html>

@@ -9,4 +9,4 @@ type: yt-notes-index
 
 | Note | Summary | Channel | Added | Status |
 |---|---|---|---|---|
-| [[Consistent_Hashing/Consistent_Hashing\|Consistent Hashing]] | Place servers and keys on a hash ring so adding or removing a server moves only ~1/N of keys; virtual nodes keep load even. | Test Channel | 2026-10-24 | new |
+| [[Consistent_Hashing/Consistent_Hashing\|Consistent Hashing]] · [[Consistent_Hashing/Consistent_Hashing.html\|page]] | Place servers and keys on a hash ring so adding or removing a server moves only ~1/N of keys; virtual nodes keep load even. | Test Channel | 2026-10-25 | new |

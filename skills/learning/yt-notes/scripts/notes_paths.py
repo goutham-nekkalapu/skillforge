@@ -3,7 +3,7 @@
 
   notes_paths.py where
       Print the save location banner + existing topics.
-  notes_paths.py prepare --source <source_dir> --topic "System Design" --title "Consistent Hashing"
+  notes_paths.py prepare --source <source_dir> --topic "System Design" --title "Consistent Hashing" [--format html|markdown]
       Create the note folder and print the file names/links to use (JSON).
       If a note for the same video already exists anywhere, it is reported so
       it can be regenerated in place instead of duplicated.
@@ -13,8 +13,9 @@
 Layout:
   <root>/_index.md                            all topics
   <root>/<Topic>/_index.md                    notes in a topic
-  <root>/<Topic>/<Title>/<Title>.md           the note
-  <root>/<Topic>/<Title>/<Title>_interactive.html   (optional)
+  <root>/<Topic>/<Title>/<Title>.html         the note (html format, the default)
+  <root>/<Topic>/<Title>/<Title>.md           card for Obsidian search/index (html format),
+                                              or the note itself (markdown format)
   <root>/_sources/<Video_Title>_<id>/         transcript package (yt-transcript)
 
 Folder and file names use underscores instead of spaces (e.g. System_Design/
@@ -122,30 +123,35 @@ def cmd_prepare(cfg, args):
         topic_rel = "/".join(topic_parts)
     note_dir.mkdir(parents=True, exist_ok=True)
 
-    note_md = note_dir / f"{title}.md"
-    html = note_dir / f"{title}_interactive.html"
+    fmt = (args.format or cfg.get("note_format") or "html").lower()
+    if fmt not in ("html", "markdown"):
+        sys.exit(f"ERROR: note format must be 'html' or 'markdown', not {fmt!r}")
+    card_md = note_dir / f"{title}.md"            # html mode: small card; markdown mode: the note itself
+    page_html = note_dir / f"{title}.html"         # html mode: the full note
     transcript_md = next(iter(sorted(src.glob("transcript_*.md")) + sorted(src.glob("transcript - *.md"))), None)
-    vault = cfg.get("obsidian_vault_root") or ""
+    vault = C.find_vault_root(cfg["_root"], cfg.get("obsidian_vault_root") or "")
     embed_path = None
     if vault:
-        vp = Path(os.path.expandvars(vault)).expanduser()
         try:
-            embed_path = html.resolve().relative_to(vp.resolve()).as_posix()
+            embed_path = page_html.resolve().relative_to(vault.resolve()).as_posix()
         except ValueError:
             embed_path = None
     drive_dir = "/".join([cfg["drive_root"].strip("/"), topic_rel, note_dir.name])
     out = {
+        "format": fmt,
         "note_dir": str(note_dir),
-        "note_file": str(note_md),
-        "note_exists": note_md.exists(),
+        "note_file": str(page_html if fmt == "html" else card_md),
+        "card_file": str(card_md) if fmt == "html" else None,
+        "note_exists": (page_html if fmt == "html" else card_md).exists(),
         "regenerating_existing_note": bool(existing),
-        "interactive_file": str(html),
-        "interactive_wikilink": f"[[{html.name}|▶ Open the interactive walkthrough]]",
-        "interactive_embed_block": (f"```html-embed\nfile: {embed_path}\n```" if embed_path else None),
+        "page_wikilink": f"[[{page_html.name}|Open the full note]]" if fmt == "html" else None,
+        "page_embed_block": (f"```html-embed\nfile: {embed_path}\n```" if (embed_path and fmt == "html") else None),
         "transcript_wikilink": f"[[{transcript_md.stem}|Full transcript]]" if transcript_md else None,
+        "vault_root": str(vault) if vault else None,
         "source_dir": str(src),
         "topic": topic_rel,
         "drive_dir": drive_dir,
+        "drive_files": [p.name for p in ((page_html, card_md) if fmt == "html" else (card_md,))],
         "today": date.today().isoformat(),
         "video_id": vid,
         "existing_topics": topics(root),
@@ -162,9 +168,11 @@ def rebuild_topic_index(root: Path, topic: str):
             continue
         fm = frontmatter(md)
         rel = md.relative_to(tdir).with_suffix("").as_posix()
+        page = md.with_suffix(".html")
+        page_link = f" · [[{page.relative_to(tdir).as_posix()}\\|page]]" if page.exists() else ""
         rows.append({
             # "\|" because a bare pipe inside a table cell would split the column
-            "link": f"[[{rel}\\|{fm.get('title') or C.display_name(md.stem)}]]",
+            "link": f"[[{rel}\\|{fm.get('title') or C.display_name(md.stem)}]]{page_link}",
             "summary": (fm.get("summary") or "").replace("|", "/"),
             "channel": (fm.get("channel") or "").replace("|", "/"),
             "created": fm.get("created") or "",
@@ -210,6 +218,8 @@ def main():
     p.add_argument("--source", required=True)
     p.add_argument("--topic", required=True)
     p.add_argument("--title", required=True)
+    p.add_argument("--format", choices=["html", "markdown"],
+                   help="override note_format from the config for this note")
     p.add_argument("--new-location", action="store_true",
                    help="create a new note even if one exists for this video")
     i = sub.add_parser("index")
