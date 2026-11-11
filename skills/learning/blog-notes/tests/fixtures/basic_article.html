@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>How Does Prompt Caching Work? | Example Blog</title>
+<link rel="canonical" href="https://example.com/blog/prompt-caching">
+<meta property="og:site_name" content="Example Blog">
+<meta name="author" content="Meta Author">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","headline":"How Does Prompt Caching Work?",
+ "author":{"@type":"Person","name":"Jane Writer"},"datePublished":"2025-03-02T09:00:00Z","dateModified":"2025-04-10T10:00:00Z"}
+</script>
+</head><body>
+<nav><a href="/">Home</a> <a href="/blog">NAVIGATION MENU TEXT</a></nav>
+<header><h1>Example Blog</h1></header>
+<article>
+<h1>How Does Prompt Caching Work?</h1>
+<h2>Why caching matters</h2>
+<p>Prompt caching stores the processed prefix of a prompt so that later requests sharing the same prefix skip recomputing it. This cuts latency and cost for long system prompts, tool definitions and documents that repeat across calls. The cache is keyed on the exact token prefix, so any change early in the prompt invalidates everything after it.  Paragraph 0.</p>
+<p>Prompt caching stores the processed prefix of a prompt so that later requests sharing the same prefix skip recomputing it. This cuts latency and cost for long system prompts, tool definitions and documents that repeat across calls. The cache is keyed on the exact token prefix, so any change early in the prompt invalidates everything after it.  Paragraph 1.</p>
+<p>Prompt caching stores the processed prefix of a prompt so that later requests sharing the same prefix skip recomputing it. This cuts latency and cost for long system prompts, tool definitions and documents that repeat across calls. The cache is keyed on the exact token prefix, so any change early in the prompt invalidates everything after it.  Paragraph 2.</p>
+<p>Prompt caching stores the processed prefix of a prompt so that later requests sharing the same prefix skip recomputing it. This cuts latency and cost for long system prompts, tool definitions and documents that repeat across calls. The cache is keyed on the exact token prefix, so any change early in the prompt invalidates everything after it.  Paragraph 3.</p>
+<p>Prompt caching stores the processed prefix of a prompt so that later requests sharing the same prefix skip recomputing it. This cuts latency and cost for long system prompts, tool definitions and documents that repeat across calls. The cache is keyed on the exact token prefix, so any change early in the prompt invalidates everything after it.  Paragraph 4.</p>
+<p>Prompt caching stores the processed prefix of a prompt so that later requests sharing the same prefix skip recomputing it. This cuts latency and cost for long system prompts, tool definitions and documents that repeat across calls. The cache is keyed on the exact token prefix, so any change early in the prompt invalidates everything after it.  Paragraph 5.</p>
+<p>Prompt caching stores the processed prefix of a prompt so that later requests sharing the same prefix skip recomputing it. This cuts latency and cost for long system prompts, tool definitions and documents that repeat across calls. The cache is keyed on the exact token prefix, so any change early in the prompt invalidates everything after it.  Paragraph 6.</p>
+<p>Prompt caching stores the processed prefix of a prompt so that later requests sharing the same prefix skip recomputing it. This cuts latency and cost for long system prompts, tool definitions and documents that repeat across calls. The cache is keyed on the exact token prefix, so any change early in the prompt invalidates everything after it.  Paragraph 7.</p>
+<h3>The prefix rule</h3>
+<ul><li>Static content goes first</li><li>Dynamic content goes last</li></ul>
+<pre><code class="language-python">response = client.messages.create(
+    model="m", system=[{"type": "text", "text": "...", "cache_control": {"type": "ephemeral"}}])
+</code></pre>
+<p><img src="img/diagram.png" alt="Cache lookup diagram"> <img src="data:image/png;base64,AAAA" alt="inline"></p>
+<table><tr><th>Request</th><th>Cost</th></tr><tr><td>Cache write</td><td>1.25x</td></tr><tr><td>Cache read</td><td>0.1x</td></tr></table>
+<h2>FAQs</h2>
+<p>Is prompt caching the same as semantic caching? No.</p>
+</article>
+<aside>SIDEBAR RELATED POSTS</aside>
+<footer>FOOTER COPYRIGHT TEXT</footer>
+</body></html>
