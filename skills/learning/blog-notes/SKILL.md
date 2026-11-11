@@ -52,11 +52,11 @@ Read the block between `=== RESULT JSON ===` and `=== END RESULT ===`. Each post
 
 The run never stops for one bad post: write notes for the posts that fetched, and list the skipped ones in the report. Never write a note from the title, a teaser, or your own knowledge of the topic; the user relies on these notes reflecting what the article actually says.
 
-Exit codes: `0` at least one post saved · `3` a Supadata key is needed (show the `=== CREDENTIALS NEEDED ===` block and stop) · `4` the network is blocked (typical on claude.ai, see below) · `5` bad input: a YouTube link (hand it to yt-notes) or not a URL.
+Exit codes: `0` at least one post saved · `2` every post failed · `3` a Supadata key is needed (show the `=== CREDENTIALS NEEDED ===` block and stop) · `4` the network is blocked (typical on claude.ai, see below) · `5` bad input: a YouTube link (hand it to yt-notes) or not a URL.
 
 **Fallbacks**
-- **claude.ai / blocked network:** call the Supadata connector's `supadata_scrape` tool for each URL, save its markdown to a file, then `fetch_article.py --from-file <file.md> --url <url> [--title "..."]` to make the package.
-- **Paywalled or blocked everywhere:** ask the user to paste the article (or save the page as HTML) and use `--from-file`.
+- **claude.ai / blocked network:** call the Supadata connector's `supadata_scrape` tool for each URL, save its markdown to a file, then `fetch_article.py --from-file <file.md> --url <url> [--title "..."]` to make the package. Its `status` follows the same table: a scraped teaser comes back `truncated`.
+- **Paywalled or blocked everywhere:** ask the user to paste the article (or save the page as HTML) and use `--from-file ... --trust`. `--trust` says the user supplied the full text, so it isn't marked truncated (warnings are still recorded).
 - **Don't use WebFetch for the article body.** It returns a model's summary, not the text, so notes built on it wouldn't be faithful. It's fine for checking a title or date.
 
 `fetch_article.py` reuses saved packages (so regenerating costs nothing); `--force` re-fetches. The `local` tier is free; `supadata` costs 1 credit per page and runs only if local fails.

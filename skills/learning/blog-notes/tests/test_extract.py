@@ -59,6 +59,22 @@ class ExtractTests(unittest.TestCase):
         raw = (FIXTURES / "latin1.html").read_bytes().replace(b'<meta charset="iso-8859-1">', b"")
         self.assertIn("café", X.decode_html(raw, "text/html; charset=ISO-8859-1"))
 
+    def test_latin1_declared_cp1252_punctuation(self):
+        raw = '<html><head><meta charset="iso-8859-1"></head><body><article><p>It\u2019s \u2014 fine</p></article></body></html>'.encode("cp1252")
+        text = X.decode_html(raw, None)
+        self.assertIn("It\u2019s \u2014 fine", text)
+
+    def test_bom_stripped(self):
+        self.assertFalse(X.decode_html("\ufeff<html></html>".encode("utf-8"), None).startswith("\ufeff"))
+
+    def test_lazy_images(self):
+        html = ('<html><body><article><p>x</p>'
+                '<img src="data:image/gif;base64,R0l" data-src="/lazy.png" alt="lazy">'
+                '<img srcset="/small.png 480w, /large.png 1024w" alt="set">'
+                '</article></body></html>')
+        srcs = [i["src"] for i in X.extract(html, "https://ex.com/post")["images"]]
+        self.assertEqual(srcs, ["https://ex.com/lazy.png", "https://ex.com/small.png"])
+
     def test_word_counts(self):
         a = load("basic_article.html")
         self.assertGreaterEqual(a["word_count"], 300)

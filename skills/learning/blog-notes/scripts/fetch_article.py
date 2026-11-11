@@ -4,8 +4,9 @@
   fetch_article.py --where                       # print the save location
   fetch_article.py <url> [<url> ...]             # fetch (reuses saved packages)
       [--force] [--tiers local,supadata] [--root PATH] [--no-images]
-  fetch_article.py --from-file <file.md|.html> --url <url> [--title "Title"]
-      # save text the user pasted or a page they saved (paywalls, blocked sites)
+  fetch_article.py --from-file <file.md|.html> --url <url> [--title "Title"] [--trust]
+      # save scraped text (e.g. from the Supadata connector), or with --trust text the
+      # user pasted / a page they saved themselves (paywalls, blocked sites)
 
 Package: <notes_root>/_sources/<Post_Title>_<urlhash>/
   meta.json               title, author, site, dates, url, word counts, fetch method, warnings, images
@@ -211,7 +212,7 @@ def download_images(images: list[dict], dest: Path, warnings: list[str]) -> None
 
 
 def write_package(sources: Path, article: dict, url: str, fetch_method: str, warnings: list[str],
-                  fetch_images: bool = True) -> Path:
+                  fetch_images: bool = True, truncated: bool = False) -> Path:
     canonical = article.get("canonical_url") or url
     h = url_hash(canonical)
     folder = sources / f"{C.safe_name(article['title'], 80)}_{h}"
@@ -231,7 +232,7 @@ def write_package(sources: Path, article: dict, url: str, fetch_method: str, war
     hashes = sorted({h, url_hash(url)})
     meta = {k: article.get(k) for k in ("title", "author", "site", "published", "updated", "canonical_url",
                                         "word_count", "page_word_count")}
-    meta.update({"url": url, "url_hashes": hashes, "hash": h, "fetch_method": fetch_method,
+    meta.update({"url": url, "url_hashes": hashes, "truncated": truncated, "hash": h, "fetch_method": fetch_method,
                  "warnings": warnings, "fetched": date.today().isoformat(),
                  "article_file": f"article_{h}.md", "images": images})
     (folder / "meta.json").write_text(json.dumps(meta, indent=2, ensure_ascii=False), encoding="utf-8")
@@ -255,7 +256,10 @@ def fetch_one(url: str, cfg: dict, tiers: list[str], force: bool, fetch_images: 
         cached = find_cached(sources, url)
         if cached:
             meta = json.loads((cached / "meta.json").read_text(encoding="utf-8"))
-            result.update(status="cached", source_dir=str(cached), title=meta.get("title"),
+            truncated = meta.get("truncated")
+            if truncated is None:  # packages saved before the flag existed
+                truncated = bool(meta.get("warnings")) and meta.get("fetch_method") != "user-provided"
+            result.update(status="truncated" if truncated else "cached", source_dir=str(cached), title=meta.get("title"),
                           word_count=meta.get("word_count", 0), fetch_method=meta.get("fetch_method"),
                           warnings=meta.get("warnings", []))
             log.append(f"{url}: reusing saved package {cached.name}")
@@ -300,9 +304,10 @@ def fetch_one(url: str, cfg: dict, tiers: list[str], force: bool, fetch_images: 
         return result
 
     art, tier, warns = best
+    truncated = bool(warns)
     warns = list(warns)
-    folder = write_package(sources, art, url, tier, warns, fetch_images)
-    result.update(status="truncated" if X.paywall_warnings(art["markdown"], art["word_count"], art.get("page_word_count", 0)) else "ok",
+    folder = write_package(sources, art, url, tier, warns, fetch_images, truncated)
+    result.update(status="truncated" if truncated else "ok",
                   source_dir=str(folder), title=art["title"], word_count=art["word_count"], fetch_method=tier,
                   warnings=warns)
     return result
@@ -336,6 +341,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--from-file", help="markdown or HTML file with the article (pasted or saved by the user)")
     ap.add_argument("--url", help="the post's URL, with --from-file")
     ap.add_argument("--title", help="the post's title, with --from-file")
+    ap.add_argument("--trust", action="store_true",
+                    help="with --from-file: the user pasted or saved the full article, so don't mark it truncated")
     a = ap.parse_args(argv)
 
     cfg = C.load(SKILL_DIR, a.root)
@@ -347,17 +354,19 @@ def main(argv: list[str] | None = None) -> int:
         if not a.url or not is_web_url(a.url):
             print("ERROR: --from-file needs --url <the post's http(s) URL>")
             return 5
-        text = Path(a.from_file).expanduser().read_text(encoding="utf-8", errors="replace")
-        if text.lstrip().startswith("<"):
-            art = X.extract(text, a.url)
+        raw = Path(a.from_file).expanduser().read_bytes()
+        if raw.lstrip(b"\xef\xbb\xbf \t\r\n").startswith(b"<"):
+            art = X.extract(X.decode_html(raw, None), a.url)
             if a.title:
                 art["title"] = a.title
         else:
-            art = article_from_markdown(text, a.url, a.title)
-        warns = [w for w in X.paywall_warnings(art["markdown"], art["word_count"], 0)]
-        folder = write_package(cfg["_sources"], art, a.url, "user-provided", warns, not a.no_images)
-        emit({"posts": [{"url": a.url, "status": "ok", "source_dir": str(folder), "title": art["title"],
-                         "word_count": art["word_count"], "fetch_method": "user-provided", "warnings": warns,
+            art = article_from_markdown(raw.decode("utf-8", errors="replace").lstrip("\ufeff"), a.url, a.title)
+        warns = X.paywall_warnings(art["markdown"], art["word_count"], art.get("page_word_count", 0))
+        truncated = bool(warns) and not a.trust
+        method = "user-provided" if a.trust else "from-file"
+        folder = write_package(cfg["_sources"], art, a.url, method, warns, not a.no_images, truncated)
+        emit({"posts": [{"url": a.url, "status": "truncated" if truncated else "ok", "source_dir": str(folder), "title": art["title"],
+                         "word_count": art["word_count"], "fetch_method": method, "warnings": warns,
                          "error": None}], "credits_used": 0})
         return 0
 

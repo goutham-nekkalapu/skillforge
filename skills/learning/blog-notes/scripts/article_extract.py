@@ -27,6 +27,9 @@ except Exception:  # pragma: no cover - depends on the machine
 _META_CHARSET = re.compile(rb"""<meta[^>]+charset\s*=\s*["']?\s*([A-Za-z0-9_\-:.]+)""", re.I)
 
 
+LATIN_ALIASES = {k: "cp1252" for k in ("iso-8859-1", "iso8859-1", "latin-1", "latin1", "l1", "us-ascii", "ascii")}
+
+
 def decode_html(raw: bytes, content_type: str | None) -> str:
     """Bytes to text: charset from the HTTP header, then <meta>, then UTF-8, then cp1252."""
     candidates = []
@@ -38,9 +41,12 @@ def decode_html(raw: bytes, content_type: str | None) -> str:
     if m:
         candidates.append(m.group(1).decode("ascii", "ignore"))
     candidates.append("utf-8")
+    if raw.startswith(b"\xef\xbb\xbf"):
+        raw, candidates = raw[3:], ["utf-8"] + candidates
     for enc in candidates:
+        enc = LATIN_ALIASES.get(enc.strip().lower(), enc)  # browsers read these labels as cp1252
         try:
-            return raw.decode(enc)
+            return raw.decode(enc).lstrip("\ufeff")
         except (LookupError, UnicodeDecodeError):
             continue
     return raw.decode("cp1252", errors="replace")
@@ -236,8 +242,12 @@ class _Md:
         return inner
 
     def img(self, n: Node) -> str:
-        src = n.attrs.get("src") or n.attrs.get("data-src") or ""
-        if not src or src.startswith("data:"):
+        candidates = [n.attrs.get(k, "") for k in ("src", "data-src", "data-lazy-src", "data-original")]
+        for k in ("srcset", "data-srcset"):
+            first = (n.attrs.get(k) or "").split(",")[0].strip().split(" ")[0]
+            candidates.append(first)
+        src = next((c.strip() for c in candidates if c.strip() and not c.strip().startswith("data:")), "")
+        if not src:
             return ""
         src = urljoin(self.base, src)
         alt = _ws(n.attrs.get("alt", "")).strip()

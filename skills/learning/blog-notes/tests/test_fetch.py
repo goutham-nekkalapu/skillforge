@@ -151,10 +151,32 @@ class FetchTests(unittest.TestCase):
         _, res, _ = run([URL, "--tiers", "local"])
         self.assertEqual(res["posts"][0]["status"], "truncated")
 
+    def test_truncated_cached_stays_truncated(self):
+        self.web({URL: self.page("paywall.html")})
+        run([URL, "--tiers", "local"])
+        self.web({})
+        _, res, _ = run([URL, "--tiers", "local"])
+        self.assertEqual(res["posts"][0]["status"], "truncated")
+
+    def test_from_file_short_is_truncated(self):
+        f = Path(self.tmp.name) / "scraped.md"
+        f.write_text("# Teaser\n\nSemantic caching matches by meaning. Subscribe to continue reading.")
+        _, res, _ = run(["--from-file", str(f), "--url", URL])
+        self.assertEqual(res["posts"][0]["status"], "truncated")
+        _, res, _ = run(["--from-file", str(f), "--url", URL, "--trust"])
+        self.assertEqual(res["posts"][0]["status"], "ok")
+
+    def test_from_file_html_latin1(self):
+        f = Path(self.tmp.name) / "saved.html"
+        f.write_bytes((FIXTURES / "latin1.html").read_bytes())
+        _, res, _ = run(["--from-file", str(f), "--url", URL, "--trust"])
+        art = next(Path(res["posts"][0]["source_dir"]).glob("article_*.md")).read_text(encoding="utf-8")
+        self.assertIn("café", art)
+
     def test_from_file(self):
         f = Path(self.tmp.name) / "pasted.md"
         f.write_text("# My Pasted Post\n\n" + "word " * 400)
-        code, res, _ = run(["--from-file", str(f), "--url", URL])
+        code, res, _ = run(["--from-file", str(f), "--url", URL, "--trust"])
         self.assertEqual(code, 0)
         meta = json.loads(Path(res["posts"][0]["source_dir"], "meta.json").read_text())
         self.assertEqual(meta["fetch_method"], "user-provided")
