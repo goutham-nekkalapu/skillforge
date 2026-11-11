@@ -1,10 +1,10 @@
-"""Shared configuration for the yt-transcript and yt-notes skills.
+"""Shared configuration for the yt-transcript, yt-notes and blog-notes skills.
 
-Both skills read the SAME user config file so transcripts and notes always land
+All of them read the SAME user config file so transcripts and notes always land
 under one root folder.
 
 Resolution order (later wins; empty values never override):
-  1. Built-in defaults (notes root = ~/YouTubeNotes)
+  1. Built-in defaults (notes root = ~/Notes)
   2. Skill config: config.json inside the yt-transcript skill folder, then one
      inside this skill's own folder. This is the file to edit on claude.ai,
      where it is the only config that persists; yt-notes reads yt-transcript's
@@ -30,12 +30,12 @@ from pathlib import Path
 DEFAULTS = {
     # Where everything is stored on this device. Edit to point at your
     # Google-Drive-synced folder, e.g.
-    # "~/Library/CloudStorage/GoogleDrive-you@gmail.com/My Drive/Vault/YouTube Notes"
-    "notes_root": "~/YouTubeNotes",
+    # "~/Library/CloudStorage/GoogleDrive-you@gmail.com/My Drive/Vault/Notes"
+    "notes_root": "~/Notes",
     # Folder path inside "My Drive" used when running in claude.ai (web, mobile,
     # desktop chat), where files are uploaded with the Google Drive connector.
     # Should be the Drive-side twin of notes_root.
-    "drive_root": "YouTubeNotes",
+    "drive_root": "Notes",
     # How yt-notes writes notes: "html" (default) = a rich single-page note with
     # tabs, illustrations and animations, plus a small markdown card for
     # Obsidian search; "markdown" = an Obsidian markdown note with HTML-snippet illustrations.
@@ -58,6 +58,18 @@ DEFAULTS = {
     "supadata_key": "",
     # Max time to wait for a Supadata AI transcription job.
     "supadata_poll_timeout_seconds": 1800,
+    # blog-notes: "markdown" (default) = markdown note, with small HTML
+    # explainer pages only for concepts that move; "html" = yt-notes-style page.
+    "blog_note_format": "markdown",
+    # blog-notes depth: "quick", "distilled" (default) or "deep".
+    "blog_mode": "distilled",
+    # Most blog posts combined into one note, and their total word budget.
+    "max_posts": 5,
+    "max_combined_words": 40000,
+    # Order of article sources to try: "local" (free) then "supadata" (1 credit).
+    "article_tiers": ["local", "supadata"],
+    # Most HTML explainer pages per blog note.
+    "max_explainers": 2,
 }
 
 SECRET_KEYS = {"transcriptapi_key", "supadata_key"}
@@ -167,15 +179,16 @@ def load(skill_dir: Path, root_override: str | None = None) -> dict:
     cfg["_env"] = env
     if isinstance(cfg.get("languages"), str):
         cfg["languages"] = [s.strip() for s in cfg["languages"].split(",") if s.strip()]
-    if isinstance(cfg.get("tiers"), str):
-        cfg["tiers"] = [s.strip() for s in cfg["tiers"].split(",") if s.strip()]
+    for key in ("tiers", "article_tiers"):
+        if isinstance(cfg.get(key), str):
+            cfg[key] = [s.strip() for s in cfg[key].split(",") if s.strip()]
     return cfg
 
 
 def location_banner(cfg: dict) -> str:
     lines = [
         "=" * 60,
-        "📁 YOUTUBE NOTES LOCATION",
+        "📁 NOTES LOCATION",
         f"  Notes root  : {cfg['_root']}",
         f"  Transcripts : {cfg['_sources']}",
         f"  Environment : {cfg['_env']}",

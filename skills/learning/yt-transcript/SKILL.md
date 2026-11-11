@@ -14,7 +14,7 @@ Turn a YouTube URL into a saved source package that other skills (notably `yt-no
   transcript.json               # raw timed segments [{start, text}]
 ```
 
-The default `notes_root` is `~/YouTubeNotes` (the device's home folder). Settings are shared with `yt-notes`:
+The default `notes_root` is `~/Notes` (the device's home folder). Settings are shared with `yt-notes`:
 - **On the user's computer:** `~/.yt-notes/config.json` (created on the first run).
 - **On claude.ai:** `config.json` in this skill's folder. It persists with the skill, and yt-notes reads it too. The user edits it among the skill's files in claude.ai. The `~/.yt-notes` file isn't used there, because the sandbox disk is temporary.
 

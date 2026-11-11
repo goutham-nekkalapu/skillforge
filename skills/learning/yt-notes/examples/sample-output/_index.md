@@ -1,9 +1,9 @@
 ---
-title: "YouTube Notes - index"
+title: "Notes - index"
 type: yt-notes-index
 ---
 
-# YouTube Notes
+# Notes
 
 This page is rebuilt automatically; don't edit it.
 

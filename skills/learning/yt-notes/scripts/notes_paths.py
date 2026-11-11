@@ -262,8 +262,8 @@ def rebuild_topic_index(root: Path, topic: str):
 
 
 def rebuild_root_index(root: Path):
-    lines = ["---", 'title: "YouTube Notes - index"', "type: yt-notes-index", "---", "",
-             "# YouTube Notes", "", "This page is rebuilt automatically; don't edit it.", ""]
+    lines = ["---", 'title: "Notes - index"', "type: yt-notes-index", "---", "",
+             "# Notes", "", "This page is rebuilt automatically; don't edit it.", ""]
     for t in topics(root):
         n = sum(1 for tt, _ in note_files(root) if tt == t)
         if n:

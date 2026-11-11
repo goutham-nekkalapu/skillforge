@@ -35,13 +35,13 @@ brew install yt-dlp deno
 ./install.sh google-drive/gdrive-save          # add --platform cursor for Cursor
 ```
 
-Ask: *"Make notes from https://youtube.com/watch?v=…"*. Files are saved to `~/YouTubeNotes`.
+Ask: *"Make notes from https://youtube.com/watch?v=…"*. Files are saved to `~/Notes`.
 
 ### Web / mobile: claude.ai
 
 1. Zip each skill folder (`yt-transcript`, `yt-notes`, `gdrive-save`) and upload it: **Customize → Skills → + → Upload a skill**.
 2. **Customize → Connectors**: connect **Google Drive** (required) and **Supadata** (gets transcripts; no key needed).
-3. Ask the same way. Notes are saved to `My Drive/YouTubeNotes`.
+3. Ask the same way. Notes are saved to `My Drive/Notes`.
 4. Optional: to use a different Drive folder, change `drive_root` in the yt-transcript skill's `config.json` (see [Configure](#configure)).
 
 ## Configure
@@ -55,8 +55,8 @@ Settings:
 
 | Setting | Default | What it does |
 |---|---|---|
-| `notes_root` | `~/YouTubeNotes` | Where notes are saved on your computer. Point it at your Drive-synced folder. |
-| `drive_root` | `YouTubeNotes` | The same folder as seen from Google Drive, used on web/mobile. |
+| `notes_root` | `~/Notes` | Where notes are saved on your computer. Point it at your Drive-synced folder. |
+| `drive_root` | `Notes` | The same folder as seen from Google Drive, used on web/mobile. |
 | `languages` | `["en"]` | Preferred transcript languages. |
 | `ytdlp_args` | `[]` | `["--cookies-from-browser","chrome"]` fixes YouTube's "not a bot" check. |
 | `transcriptapi_key` | empty | Fallback when yt-dlp is blocked (or set `TRANSCRIPTAPI_KEY`). Sign up at https://transcriptapi.com/signup, then create a key at https://transcriptapi.com/dashboard/api-keys |
@@ -67,6 +67,8 @@ Settings:
 | `obsidian_vault_root` | empty | Your vault path. Usually not needed: it's found automatically from the `.obsidian` folder above `notes_root`. Used for the optional inline embed in cards. |
 
 On claude.ai, only `drive_root`, `note_format`, `max_videos`, `languages` and `tiers` matter. Leave API keys out of the skill's `config.json` and use the Supadata / TranscriptAPI connectors instead.
+
+**Moving from `YouTubeNotes`:** the default folder is now `Notes`, shared by yt-notes and blog-notes. Existing setups keep working: a `notes_root` set in your config still wins. To switch, rename the folder (on disk or in Google Drive), then update `notes_root` in `~/.yt-notes/config.json` and `drive_root` in the yt-transcript skill's `config.json` to match.
 
 If a setting appears in several places, later ones win: built-in defaults → the skill's `config.json` → `~/.yt-notes/config.json` (values you haven't changed from the defaults are ignored) → environment variables. Every run shows which files it loaded.
 

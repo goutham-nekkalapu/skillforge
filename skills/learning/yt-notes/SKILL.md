@@ -5,7 +5,7 @@ description: Turn a YouTube video, or up to 5 videos on one topic combined, into
 
 # yt-notes
 
-Make notes that let the user understand and revise a topic weeks later without rewatching the video. Notes are saved by topic under the shared notes root (default `~/YouTubeNotes`; settings live in `~/.yt-notes/config.json` on the user's computer, or in the yt-transcript skill's `config.json` on claude.ai):
+Make notes that let the user understand and revise a topic weeks later without rewatching the video. Notes are saved by topic under the shared notes root (default `~/Notes`; settings live in `~/.yt-notes/config.json` on the user's computer, or in the yt-transcript skill's `config.json` on claude.ai):
 
 ```
 <notes_root>/
