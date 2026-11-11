@@ -7,6 +7,6 @@ type: yt-notes-index
 
 1 note(s). This page is rebuilt automatically; don't edit it.
 
-| Note | Summary | Channel | Added | Status |
+| Note | Summary | Source | Added | Status |
 |---|---|---|---|---|
 | [[Consistent_Hashing/Consistent_Hashing\|Consistent Hashing]] · [[Consistent_Hashing/Consistent_Hashing.html\|page]] | Place servers and keys on a hash ring so adding or removing a server moves only ~1/N of keys; virtual nodes keep load even. | Test Channel | 2026-10-25 | new |

@@ -12,6 +12,7 @@ Each skill is a self-contained folder with a `SKILL.md` definition and optional 
 |-------|----------|-------------|
 | [lecture-distiller](skills/learning/lecture-distiller/) | All | Distills video transcripts and screenshots you already have into structured, scannable study notes |
 | [yt-notes](skills/learning/yt-notes/) | All | Turns a YouTube link into distilled, visual notes (tabbed HTML pages with illustrations, or markdown) saved by topic |
+| [blog-notes](skills/learning/blog-notes/) | All | Turns blog post links into distilled markdown notes (step-through HTML explainers only where needed), one note per concept, saved by topic |
 | [yt-transcript](skills/learning/yt-transcript/) | All | Saves a YouTube video's transcript, description and chapters (yt-dlp → TranscriptAPI → Supadata) |
 
 ### Google Drive

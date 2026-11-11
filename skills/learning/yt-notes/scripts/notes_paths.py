@@ -95,6 +95,16 @@ def note_video_ids(fm: dict) -> set[str]:
     return {fm["video_id"]} if fm.get("video_id") else set()
 
 
+def note_source_label(fm: dict) -> str:
+    """Index "Source" column: N videos / N posts for combined notes, else channel or site."""
+    if fm.get("video_ids"):
+        return f"{len(note_video_ids(fm))} videos"
+    urls = fm.get("source_urls")
+    if isinstance(urls, list) and urls:
+        return f"{len(urls)} posts"
+    return fm.get("channel") or fm.get("site") or ""
+
+
 def find_existing_note(root: Path, vids: list[str]):
     """The note to regenerate for these videos, or None.
 
@@ -179,6 +189,7 @@ def cmd_prepare(cfg, args):
     topic_parts = [C.safe_name(p, 60) for p in re.split(r"[/\\]", args.topic) if p.strip()]
     title = C.safe_name(args.title, 90)
 
+    renamed = None
     found = find_existing_note(root, vids) if vids else None
     existing = (found[0], found[1]) if found else None
     previous_videos = sorted(found[2]) if found else []
@@ -187,7 +198,16 @@ def cmd_prepare(cfg, args):
         note_dir, title = e_md.parent, e_md.stem
         topic_rel = str(e_md.parent.parent.relative_to(root))
     else:
-        note_dir = root.joinpath(*topic_parts) / title
+        base = root.joinpath(*topic_parts)
+        if (base / title / f"{title}.md").exists():
+            # Another note (e.g. from blog-notes) already has this title: never overwrite it.
+            renamed = C.display_name(title)
+            label = videos[0].get("channel") or "video"
+            candidate, n = C.safe_name(f"{args.title} ({label})", 90), 2
+            while (base / candidate / f"{candidate}.md").exists():
+                candidate, n = C.safe_name(f"{args.title} ({label}) {n}", 90), n + 1
+            title = candidate
+        note_dir = base / title
         topic_rel = "/".join(topic_parts)
     note_dir.mkdir(parents=True, exist_ok=True)
 
@@ -211,6 +231,7 @@ def cmd_prepare(cfg, args):
         "card_file": str(card_md) if fmt == "html" else None,
         "note_exists": (page_html if fmt == "html" else card_md).exists(),
         "regenerating_existing_note": bool(existing),
+        "renamed_for_collision": renamed,
         "page_wikilink": f"[[{page_html.name}|Open the full note]]" if fmt == "html" else None,
         "page_embed_block": (f"```html-embed\nfile: {embed_path}\n```" if (embed_path and fmt == "html") else None),
         "transcript_wikilink": videos[0]["transcript_wikilink"],
@@ -247,23 +268,22 @@ def rebuild_topic_index(root: Path, topic: str):
             # "\|" because a bare pipe inside a table cell would split the column
             "link": f"[[{rel}\\|{fm.get('title') or C.display_name(md.stem)}]]{page_link}",
             "summary": (fm.get("summary") or "").replace("|", "/"),
-            "channel": (f"{len(note_video_ids(fm))} videos" if fm.get("video_ids")
-                        else (fm.get("channel") or "")).replace("|", "/"),
+            "source": note_source_label(fm).replace("|", "/"),
             "created": fm.get("created") or "",
             "status": fm.get("status") or "",
         })
     rows.sort(key=lambda r: r["created"], reverse=True)
     lines = ["---", f"title: {json.dumps(C.display_name(topic) + ' - index')}", "type: yt-notes-index", "---", "",
              f"# {C.display_name(topic)}", "", f"{len(rows)} note(s). This page is rebuilt automatically; don't edit it.", "",
-             "| Note | Summary | Channel | Added | Status |", "|---|---|---|---|---|"]
-    lines += [f"| {r['link']} | {r['summary']} | {r['channel']} | {r['created']} | {r['status']} |" for r in rows]
+             "| Note | Summary | Source | Added | Status |", "|---|---|---|---|---|"]
+    lines += [f"| {r['link']} | {r['summary']} | {r['source']} | {r['created']} | {r['status']} |" for r in rows]
     (tdir / "_index.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     return len(rows)
 
 
 def rebuild_root_index(root: Path):
-    lines = ["---", 'title: "YouTube Notes - index"', "type: yt-notes-index", "---", "",
-             "# YouTube Notes", "", "This page is rebuilt automatically; don't edit it.", ""]
+    lines = ["---", 'title: "Notes - index"', "type: yt-notes-index", "---", "",
+             "# Notes", "", "This page is rebuilt automatically; don't edit it.", ""]
     for t in topics(root):
         n = sum(1 for tt, _ in note_files(root) if tt == t)
         if n:

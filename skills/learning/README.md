@@ -8,13 +8,14 @@ Skills for transforming educational content into structured, revision-friendly s
 |-------|----------|-------------|
 | [lecture-distiller](lecture-distiller/) | All | Distills video transcripts and screenshots you already have into structured, scannable study notes |
 | [yt-notes](yt-notes/) | All | Turns a YouTube link into distilled, visual notes: a tabbed HTML page with HTML illustrations and animations (or markdown with HTML snippets), saved by topic |
+| [blog-notes](blog-notes/) | All | Turns blog post links into distilled markdown notes (HTML step-through explainers only where a concept moves), one note per concept, saved by topic next to yt-notes notes |
 | [yt-transcript](yt-transcript/) | All | Saves a YouTube video's transcript, description and chapters (yt-dlp → TranscriptAPI → Supadata AI fallback) |
 
-`yt-notes` uses `yt-transcript`, and on claude.ai saves through [google-drive/gdrive-save](../google-drive/gdrive-save/). Install all three together. Setup: [yt-notes README](yt-notes/README.md).
+`yt-notes` uses `yt-transcript`, and on claude.ai saves through [google-drive/gdrive-save](../google-drive/gdrive-save/). `blog-notes` needs `yt-notes` (template, checker, index) and shares its settings and notes folder. Install them together. Setup: [yt-notes README](yt-notes/README.md), [blog-notes README](blog-notes/README.md).
 
 ## lecture-distiller or yt-notes?
 
-**Rule of thumb: YouTube link → `yt-notes`. Transcript files or screenshots you already have → `lecture-distiller`.**
+**Rule of thumb: YouTube link → `yt-notes`. Blog post or article link → `blog-notes`. Transcript files or screenshots you already have → `lecture-distiller`.**
 
 | | lecture-distiller | yt-notes |
 |---|---|---|
