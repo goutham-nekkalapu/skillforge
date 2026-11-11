@@ -95,6 +95,16 @@ def note_video_ids(fm: dict) -> set[str]:
     return {fm["video_id"]} if fm.get("video_id") else set()
 
 
+def note_source_label(fm: dict) -> str:
+    """Index "Source" column: N videos / N posts for combined notes, else channel or site."""
+    if fm.get("video_ids"):
+        return f"{len(note_video_ids(fm))} videos"
+    urls = fm.get("source_urls")
+    if isinstance(urls, list) and urls:
+        return f"{len(urls)} posts"
+    return fm.get("channel") or fm.get("site") or ""
+
+
 def find_existing_note(root: Path, vids: list[str]):
     """The note to regenerate for these videos, or None.
 
@@ -247,16 +257,15 @@ def rebuild_topic_index(root: Path, topic: str):
             # "\|" because a bare pipe inside a table cell would split the column
             "link": f"[[{rel}\\|{fm.get('title') or C.display_name(md.stem)}]]{page_link}",
             "summary": (fm.get("summary") or "").replace("|", "/"),
-            "channel": (f"{len(note_video_ids(fm))} videos" if fm.get("video_ids")
-                        else (fm.get("channel") or "")).replace("|", "/"),
+            "source": note_source_label(fm).replace("|", "/"),
             "created": fm.get("created") or "",
             "status": fm.get("status") or "",
         })
     rows.sort(key=lambda r: r["created"], reverse=True)
     lines = ["---", f"title: {json.dumps(C.display_name(topic) + ' - index')}", "type: yt-notes-index", "---", "",
              f"# {C.display_name(topic)}", "", f"{len(rows)} note(s). This page is rebuilt automatically; don't edit it.", "",
-             "| Note | Summary | Channel | Added | Status |", "|---|---|---|---|---|"]
-    lines += [f"| {r['link']} | {r['summary']} | {r['channel']} | {r['created']} | {r['status']} |" for r in rows]
+             "| Note | Summary | Source | Added | Status |", "|---|---|---|---|---|"]
+    lines += [f"| {r['link']} | {r['summary']} | {r['source']} | {r['created']} | {r['status']} |" for r in rows]
     (tdir / "_index.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
     return len(rows)
 

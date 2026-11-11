@@ -3,6 +3,7 @@
 
   check_note.py <Note_Title>.html --card <Note_Title>.md     # HTML format (default)
   check_note.py <Note_Title>.md                              # markdown format
+  check_note.py <Note>__<Concept>.html --explainer           # blog-notes explainer page (no card)
 
 HTML page:
   * no leftover template blocks (data-example, REPLACE, {{...}}, TODO)
@@ -37,6 +38,8 @@ HTML_TAGS = ("div", "span", "details", "table", "figure", "ul", "ol")
 REQUIRED = ["title", "topic", "tags", "created", "summary"]
 # A single-video note has video_id + video_url; a combined note has video_ids + video_urls.
 SINGLE_KEYS, COMBINED_KEYS = ["video_id", "video_url"], ["video_ids", "video_urls"]
+# blog-notes (source_type: blog): source_url for one post, source_urls for a combined note.
+BLOG_SINGLE_KEYS, BLOG_COMBINED_KEYS = ["source_url"], ["source_urls"]
 
 
 # ---------------------------------------------------------------- markdown
@@ -54,7 +57,14 @@ def check_markdown(path: Path, errors, warnings, is_card=False, page: Path | Non
         errors.append(f"{path.name}: missing YAML frontmatter at the top")
     else:
         missing = [k for k in REQUIRED if k not in keys]
-        if "video_ids" in keys:
+        blog = re.search(r"^source_type:\s*[\"']?blog[\"']?\s*$", fm, re.M)
+        if blog:
+            if "source_urls" in keys:
+                if not re.search(r"^source_urls:\s*\[(.*)\]\s*$", fm, re.M):
+                    errors.append(f"{path.name}: source_urls must be an inline list, e.g. source_urls: [\"https://a\", \"https://b\"]")
+            else:
+                missing += [k for k in BLOG_SINGLE_KEYS if k not in keys]
+        elif "video_ids" in keys:
             missing += [k for k in COMBINED_KEYS if k not in keys]
             ids = re.search(r"^video_ids:\s*\[(.*)\]\s*$", fm, re.M)
             if not ids:
@@ -72,6 +82,9 @@ def check_markdown(path: Path, errors, warnings, is_card=False, page: Path | Non
         if page is not None and f"[[{page.name}" not in text:
             errors.append(f"{path.name}: card doesn't link to its page ([[{page.name}|Open the full note]])")
         return
+    for target in sorted(set(re.findall(r"\[\[([^\]|#]+\.html)", body))):
+        if not (path.parent / target).exists():
+            errors.append(f"{path.name}: links to {target}, which isn't in the note's folder")
     if re.search(r"<script|\son[a-z]+\s*=\s*[\"']", body, re.I):
         errors.append(f"{path.name}: has <script> or inline event handlers, which Obsidian strips")
     blocks = html_blocks(body)
@@ -265,6 +278,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("note", help="the .html page (HTML format) or the .md note (markdown format)")
     ap.add_argument("--card", help="the markdown card next to an HTML page")
+    ap.add_argument("--explainer", action="store_true",
+                    help="an HTML explainer page linked from a markdown note (blog-notes); no card needed")
     a = ap.parse_args()
     note = Path(a.note)
     errors, warnings = [], []
@@ -274,7 +289,9 @@ def main():
         c = check_html_static(note, errors, warnings)
         check_html_runtime(note, c, errors, warnings)
         card = Path(a.card) if a.card else note.with_suffix(".md")
-        if card.exists():
+        if a.explainer:
+            pass
+        elif card.exists():
             check_markdown(card, errors, warnings, is_card=True, page=note)
         else:
             errors.append(f"markdown card not found: {card.name} (needed for Obsidian search and the index)")
